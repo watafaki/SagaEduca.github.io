@@ -1,0 +1,679 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Comunicados | Professor | S.A.G.A.</title>
+  <link rel="icon" type="image/png" href="../logo.png" />
+  <link rel="stylesheet" href="../universal-style.css">
+  <script src="../vinheta-animation.js"></script>
+  <script src="../custom-progress-bar.js"></script>
+  <script src="../modern-sidebar.js"></script>
+  <style>
+    /* Estilos específicos da página de comunicados */
+    .comunicados-container {
+      max-width: 1000px;
+      margin: 0 auto;
+      width: 100%;
+    }
+
+    .form-container {
+      background: var(--card-bg);
+      border-radius: 15px;
+      padding: 2rem;
+      box-shadow: 0 5px 15px var(--shadow);
+      margin-bottom: 2rem;
+      transition: transform 0.3s ease;
+    }
+
+    .form-container:hover {
+      transform: translateY(-5px);
+    }
+
+    .form-title {
+      font-size: 1.5rem;
+      margin-bottom: 1.5rem;
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+    }
+
+    .form-title .icon {
+      font-size: 1.8rem;
+    }
+
+    .form-group {
+      margin-bottom: 1.5rem;
+    }
+
+    .form-group label {
+      display: block;
+      margin-bottom: 0.5rem;
+      font-weight: bold;
+    }
+
+    .form-group input,
+    .form-group textarea,
+    .form-group select {
+      width: 100%;
+      padding: 1rem;
+      border: 1px solid var(--border-color);
+      border-radius: 8px;
+      background: var(--input-bg);
+      color: var(--text-color);
+      font-size: 1rem;
+      transition: all 0.3s ease;
+    }
+
+    .form-group input:focus,
+    .form-group textarea:focus,
+    .form-group select:focus {
+      border-color: var(--accent-color);
+      outline: none;
+      box-shadow: 0 0 0 2px rgba(74, 111, 165, 0.2);
+    }
+
+    .form-group textarea {
+      min-height: 150px;
+      resize: vertical;
+    }
+
+    .form-actions {
+      display: flex;
+      justify-content: flex-end;
+      gap: 1rem;
+    }
+
+    .comunicados-list {
+      background: var(--card-bg);
+      border-radius: 15px;
+      padding: 2rem;
+      box-shadow: 0 5px 15px var(--shadow);
+    }
+
+    .comunicados-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 1.5rem;
+      flex-wrap: wrap;
+      gap: 1rem;
+    }
+
+    .comunicados-header h3 {
+      font-size: 1.5rem;
+      margin: 0;
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+    }
+
+    .comunicados-header .icon {
+      font-size: 1.8rem;
+    }
+
+    .comunicado-item {
+      background: var(--input-bg);
+      border-radius: 10px;
+      padding: 1.5rem;
+      margin-bottom: 1.5rem;
+      transition: all 0.3s ease;
+      border-left: 4px solid var(--accent-color);
+      animation: fadeIn 0.5s ease-out;
+    }
+
+    .comunicado-item:hover {
+      transform: translateY(-5px);
+      box-shadow: 0 10px 20px var(--shadow);
+    }
+
+    .comunicado-header {
+      display: flex;
+      justify-content: space-between;
+      margin-bottom: 1rem;
+      flex-wrap: wrap;
+      gap: 0.5rem;
+    }
+
+    .comunicado-title {
+      font-size: 1.2rem;
+      font-weight: bold;
+    }
+
+    .comunicado-date {
+      font-size: 0.9rem;
+      opacity: 0.7;
+    }
+
+    .comunicado-content {
+      margin-bottom: 1rem;
+      line-height: 1.6;
+    }
+
+    .comunicado-meta {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      font-size: 0.9rem;
+      opacity: 0.8;
+    }
+
+    .comunicado-author {
+      font-style: italic;
+    }
+
+    .comunicado-actions {
+      display: flex;
+      gap: 0.5rem;
+    }
+
+    .action-btn {
+      padding: 0.3rem 0.8rem;
+      border: none;
+      border-radius: 20px;
+      background: var(--card-bg);
+      color: var(--text-color);
+      cursor: pointer;
+      transition: all 0.3s ease;
+      font-size: 0.9rem;
+    }
+
+    .action-btn:hover {
+      background: var(--accent-color);
+      color: white;
+    }
+
+    .action-btn.delete {
+      background: rgba(255, 82, 82, 0.1);
+      color: var(--error-color);
+    }
+
+    .action-btn.delete:hover {
+      background: var(--error-color);
+      color: white;
+    }
+
+    .empty-state {
+      text-align: center;
+      padding: 3rem 1rem;
+      opacity: 0.7;
+    }
+
+    .empty-state p {
+      font-size: 1.2rem;
+      margin-bottom: 1rem;
+    }
+
+    .empty-state span {
+      font-size: 3rem;
+      display: block;
+      margin-bottom: 1rem;
+    }
+
+    .success-message,
+    .error-message {
+      padding: 1rem;
+      border-radius: 8px;
+      margin-bottom: 1.5rem;
+      display: none;
+    }
+
+    .success-message {
+      background: rgba(76, 175, 80, 0.1);
+      border: 1px solid var(--success-color);
+      color: var(--success-color);
+    }
+
+    .error-message {
+      background: rgba(255, 82, 82, 0.1);
+      border: 1px solid var(--error-color);
+      color: var(--error-color);
+    }
+
+    @media (max-width: 768px) {
+      .form-actions {
+        flex-direction: column;
+      }
+      
+      .comunicado-header {
+        flex-direction: column;
+      }
+    }
+  </style>
+</head>
+<body data-theme="escuro">
+  <canvas id="particles-js"></canvas>
+
+  <header>
+    <img src="../logo.png" alt="Logo S.A.G.A." class="logo" onclick="window.location.href='professordash.html'">
+    <div class="theme-toggle">
+      <span id="username-display">Olá, Professor</span>
+      <button onclick="setTheme('escuro')">🌙</button>
+      <button onclick="setTheme('claro')">☀️</button>
+      <button onclick="setTheme('leitura')">📖</button>
+      <button class="logout-btn" onclick="logout()">Sair</button>
+    </div>
+  </header>
+
+  <main>
+    <a class="back-btn" onclick="window.location.href='professordash.html'">← Voltar ao Dashboard</a>
+    
+    <section class="page-title">
+      <h1>Gerenciamento de Comunicados</h1>
+      <p>Publique e gerencie comunicados para os alunos</p>
+    </section>
+
+    <div class="comunicados-container">
+      <div id="success-message" class="success-message">
+        Comunicado publicado com sucesso!
+      </div>
+      
+      <div id="error-message" class="error-message">
+        Erro ao publicar comunicado. Tente novamente.
+      </div>
+      
+      <div class="form-container">
+        <h3 class="form-title"><span class="icon">📢</span> Novo Comunicado</h3>
+        
+        <form id="comunicado-form" onsubmit="publicarComunicado(event)">
+          <div class="form-group">
+            <label for="titulo">Título do Comunicado</label>
+            <input type="text" id="titulo" name="titulo" placeholder="Ex: Alteração no calendário de provas" required>
+          </div>
+          
+          <div class="form-group">
+            <label for="conteudo">Conteúdo</label>
+            <textarea id="conteudo" name="conteudo" placeholder="Digite o conteúdo do comunicado..." required></textarea>
+          </div>
+          
+          <div class="form-group">
+            <label for="turma">Destinatários</label>
+            <select id="turma" name="turma" required>
+              <option value="todos">Todos os Alunos</option>
+              <option value="1ano">1º Ano</option>
+              <option value="2ano">2º Ano</option>
+              <option value="3ano">3º Ano</option>
+            </select>
+          </div>
+          
+          
+          <div class="form-actions">
+            <button type="reset" class="btn btn-outline">Limpar</button>
+            <button type="submit" class="btn">Publicar Comunicado</button>
+          </div>
+        </form>
+      </div>
+      
+      <div class="comunicados-list">
+        <div class="comunicados-header">
+          <h3><span class="icon">📋</span> Comunicados Publicados</h3>
+        </div>
+        
+        <div id="comunicados-container">
+          <div class="loading-indicator">
+            <p>Carregando comunicados...</p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </main>
+
+  <!-- Firebase SDKs -->
+  <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-auth-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-database-compat.js"></script>
+
+  <script>
+    // Firebase Config
+    const firebaseConfig = {
+      apiKey: "AIzaSyDhHGoe7GDJhMOjYSTbgqC7DHE2Dc_RR0M",
+      authDomain: "saga-1d4e2.firebaseapp.com",
+      projectId: "saga-1d4e2",
+      storageBucket: "saga-1d4e2.firebasestorage.app",
+      messagingSenderId: "419315470764",
+      appId: "1:419315470764:web:4e3fd28ca21f935bc52a09",
+      measurementId: "G-SSBL21VWE3"
+    };
+
+    // Initialize Firebase
+    firebase.initializeApp(firebaseConfig);
+    const auth = firebase.auth();
+    const db = firebase.database();
+
+    // Verificar autenticação
+    auth.onAuthStateChanged((user) => {
+      if (user) {
+        // Verificar se é professor (pelo email)
+        const email = user.email.toLowerCase();
+        if (!email.includes('professor')) {
+          // Redirecionar para login se não for professor
+          alert('Acesso restrito a professores.');
+          auth.signOut().then(() => {
+            window.location.href = '../login.html';
+          });
+          return;
+        }
+        
+        // Usuário é professor
+        const username = user.email.split('@')[0];
+        document.getElementById('username-display').textContent = `Olá, ${username}`;
+        
+        // Carregar comunicados
+        carregarComunicados();
+      } else {
+        // Usuário não está logado, redirecionar para login
+        window.location.href = '../login.html';
+      }
+    });
+
+    // Função de logout
+    function logout() {
+      auth.signOut()
+        .then(() => {
+          window.location.href = '../login.html';
+        })
+        .catch((error) => {
+          console.error('Erro ao fazer logout:', error);
+        });
+    }
+
+    // Publicar comunicado
+    function publicarComunicado(event) {
+      event.preventDefault();
+      
+      const titulo = document.getElementById('titulo').value.trim();
+      const conteudo = document.getElementById('conteudo').value.trim();
+      const turma = document.getElementById('turma').value;
+      
+      // Verificar se usuário está logado
+      const user = auth.currentUser;
+      if (!user) {
+        mostrarMensagem('error', 'Você precisa estar logado para publicar comunicados.');
+        return;
+      }
+      
+      // Criar objeto do comunicado
+      const comunicado = {
+        titulo: titulo,
+        conteudo: conteudo,
+        turma: turma,
+        autor: user.email.split('@')[0],
+        timestamp: Date.now(),
+        data: new Date().toISOString()
+      };
+      
+      // Salvar no Firebase
+      const comunicadosRef = db.ref('comunicados');
+      comunicadosRef.push(comunicado)
+        .then(() => {
+          // Limpar formulário
+          document.getElementById('comunicado-form').reset();
+          
+          // Mostrar mensagem de sucesso
+          mostrarMensagem('success', 'Comunicado publicado com sucesso!');
+          
+          // Recarregar lista de comunicados
+          carregarComunicados();
+        })
+        .catch((error) => {
+          console.error('Erro ao publicar comunicado:', error);
+          mostrarMensagem('error', 'Erro ao publicar comunicado. Tente novamente.');
+        });
+    }
+
+    // Carregar comunicados
+    function carregarComunicados() {
+      const comunicadosContainer = document.getElementById('comunicados-container');
+      
+      // Mostrar indicador de carregamento
+      comunicadosContainer.innerHTML = `
+        <div class="loading-indicator">
+          <p>Carregando comunicados...</p>
+        </div>
+      `;
+      
+      // Buscar comunicados no Firebase
+      db.ref('comunicados').orderByChild('timestamp').once('value')
+        .then((snapshot) => {
+          // Limpar container
+          comunicadosContainer.innerHTML = '';
+          
+          if (!snapshot.exists()) {
+            // Mostrar estado vazio
+            comunicadosContainer.innerHTML = `
+              <div class="empty-state">
+                <span>📢</span>
+                <p>Nenhum comunicado publicado ainda.</p>
+              </div>
+            `;
+            return;
+          }
+          
+          // Converter para array e inverter para mostrar mais recentes primeiro
+          const comunicados = [];
+          snapshot.forEach((childSnapshot) => {
+            const comunicado = childSnapshot.val();
+            comunicado.id = childSnapshot.key;
+            comunicados.push(comunicado);
+          });
+          
+          // Ordenar por timestamp (mais recentes primeiro)
+          comunicados.sort((a, b) => b.timestamp - a.timestamp);
+          
+          // Mostrar comunicados
+          comunicados.forEach((comunicado) => {
+            const date = new Date(comunicado.timestamp);
+            const formattedDate = `${date.toLocaleDateString()} ${date.toLocaleTimeString()}`;
+            
+            const comunicadoItem = document.createElement('div');
+            comunicadoItem.className = 'comunicado-item';
+            comunicadoItem.innerHTML = `
+              <div class="comunicado-header">
+                <div class="comunicado-title">${comunicado.titulo}</div>
+                <div class="comunicado-date">${formattedDate}</div>
+              </div>
+              <div class="comunicado-content">${comunicado.conteudo.replace(/\n/g, '<br>')}</div>
+              <div class="comunicado-meta">
+                <div class="comunicado-author">Publicado por: ${comunicado.autor}</div>
+                <div class="comunicado-actions">
+                  <button class="action-btn" onclick="editarComunicado('${comunicado.id}')">Editar</button>
+                  <button class="action-btn delete" onclick="excluirComunicado('${comunicado.id}')">Excluir</button>
+                </div>
+              </div>
+            `;
+            
+            comunicadosContainer.appendChild(comunicadoItem);
+          });
+        })
+        .catch((error) => {
+          console.error('Erro ao carregar comunicados:', error);
+          comunicadosContainer.innerHTML = `
+            <div class="empty-state">
+              <span>⚠️</span>
+              <p>Erro ao carregar comunicados. Tente novamente mais tarde.</p>
+            </div>
+          `;
+        });
+    }
+
+    // Editar comunicado
+    function editarComunicado(id) {
+      // Buscar comunicado no Firebase
+      db.ref(`comunicados/${id}`).once('value')
+        .then((snapshot) => {
+          const comunicado = snapshot.val();
+          
+          // Preencher formulário
+          document.getElementById('titulo').value = comunicado.titulo;
+          document.getElementById('conteudo').value = comunicado.conteudo;
+          document.getElementById('turma').value = comunicado.turma;
+          
+          // Alterar botão de submit
+          const submitButton = document.querySelector('#comunicado-form button[type="submit"]');
+          submitButton.textContent = 'Atualizar Comunicado';
+          
+          // Adicionar ID ao formulário para identificar que é uma edição
+          document.getElementById('comunicado-form').dataset.editId = id;
+          
+          // Scroll para o formulário
+          document.querySelector('.form-container').scrollIntoView({ behavior: 'smooth' });
+          
+          // Alterar handler do formulário
+          document.getElementById('comunicado-form').onsubmit = function(event) {
+            event.preventDefault();
+            
+            const titulo = document.getElementById('titulo').value.trim();
+            const conteudo = document.getElementById('conteudo').value.trim();
+            const turma = document.getElementById('turma').value;
+            
+            // Atualizar comunicado
+            db.ref(`comunicados/${id}`).update({
+              titulo: titulo,
+              conteudo: conteudo,
+              turma: turma,
+              editado: true,
+              dataEdicao: new Date().toISOString()
+            })
+              .then(() => {
+                // Limpar formulário
+                document.getElementById('comunicado-form').reset();
+                
+                // Restaurar botão de submit
+                submitButton.textContent = 'Publicar Comunicado';
+                
+                // Remover ID do formulário
+                delete document.getElementById('comunicado-form').dataset.editId;
+                
+                // Restaurar handler do formulário
+                document.getElementById('comunicado-form').onsubmit = publicarComunicado;
+                
+                // Mostrar mensagem de sucesso
+                mostrarMensagem('success', 'Comunicado atualizado com sucesso!');
+                
+                // Recarregar lista de comunicados
+                carregarComunicados();
+              })
+              .catch((error) => {
+                console.error('Erro ao atualizar comunicado:', error);
+                mostrarMensagem('error', 'Erro ao atualizar comunicado. Tente novamente.');
+              });
+          };
+        })
+        .catch((error) => {
+          console.error('Erro ao buscar comunicado:', error);
+          mostrarMensagem('error', 'Erro ao buscar comunicado. Tente novamente.');
+        });
+    }
+
+    // Excluir comunicado
+    function excluirComunicado(id) {
+      if (confirm('Tem certeza que deseja excluir este comunicado? Esta ação não pode ser desfeita.')) {
+        db.ref(`comunicados/${id}`).remove()
+          .then(() => {
+            mostrarMensagem('success', 'Comunicado excluído com sucesso!');
+            carregarComunicados();
+          })
+          .catch((error) => {
+            console.error('Erro ao excluir comunicado:', error);
+            mostrarMensagem('error', 'Erro ao excluir comunicado. Tente novamente.');
+          });
+      }
+    }
+
+    // Mostrar mensagem
+    function mostrarMensagem(tipo, texto) {
+      const successMessage = document.getElementById('success-message');
+      const errorMessage = document.getElementById('error-message');
+      
+      // Esconder ambas as mensagens
+      successMessage.style.display = 'none';
+      errorMessage.style.display = 'none';
+      
+      // Mostrar mensagem apropriada
+      if (tipo === 'success') {
+        successMessage.textContent = texto;
+        successMessage.style.display = 'block';
+        
+        // Esconder após 5 segundos
+        setTimeout(() => {
+          successMessage.style.display = 'none';
+        }, 5000);
+      } else {
+        errorMessage.textContent = texto;
+        errorMessage.style.display = 'block';
+        
+        // Esconder após 5 segundos
+        setTimeout(() => {
+          errorMessage.style.display = 'none';
+        }, 5000);
+      }
+    }
+
+    // Tema
+    function setTheme(theme) {
+      document.body.setAttribute('data-theme', theme);
+      localStorage.setItem('temaSAGA', theme);
+      updateParticles();
+    }
+
+    window.addEventListener('DOMContentLoaded', () => {
+      const savedTheme = localStorage.getItem('temaSAGA');
+      if (savedTheme) setTheme(savedTheme);
+      initParticles();
+    });
+
+    // Particles.js
+    function initParticles() {
+      const color = getComputedStyle(document.documentElement)
+        .getPropertyValue('--particle-color').trim();
+
+      particlesJS("particles-js", {
+        particles: {
+          number: { value: 60 },
+          color: { value: color },
+          opacity: { value: 0.5 },
+          shape: { type: "circle" },
+          size: { value: 3 },
+          line_linked: {
+            enable: true,
+            distance: 150,
+            color: color,
+            opacity: 0.4,
+            width: 1
+          },
+          move: {
+            enable: true,
+            speed: 2,
+            direction: "none",
+            out_mode: "out"
+          }
+        },
+        interactivity: {
+          detect_on: "canvas",
+          events: {
+            onhover: { enable: true, mode: "repulse" }
+          },
+          modes: {
+            repulse: { distance: 100, duration: 0.4 }
+          }
+        },
+        retina_detect: true
+      });
+    }
+
+    function updateParticles() {
+      if (window.pJSDom?.length) {
+        const color = getComputedStyle(document.documentElement)
+          .getPropertyValue('--particle-color').trim();
+        const pjs = window.pJSDom[0].pJS;
+        pjs.particles.color.value = color;
+        pjs.particles.line_linked.color = color;
+        pjs.fn.particlesRefresh();
+      }
+    }
+  </script>
+
+  <!-- Particles.js -->
+  <script src="https://cdn.jsdelivr.net/npm/particles.js"></script>
+</body>
+</html>

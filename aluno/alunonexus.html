@@ -1,0 +1,273 @@
+<!DOCTYPE html>
+<html lang="pt-BR" data-theme="dark">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Nexus AI | S.A.G.A.</title>
+  <link rel="icon" type="image/png" href="../logo.png" />
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="../universal-style.css">
+  <script src="../vinheta-animation.js"></script>
+  <script src="../custom-progress-bar.js"></script>
+  <script src="../modern-sidebar.js"></script>
+  <style>
+    /* === Design padrão do SAGA === */
+    :root { --font-main: 'Inter', sans-serif; }
+    [data-theme='dark'] { 
+      --bg-primary: #0a0a0a; --bg-secondary: #141414; --surface-color: #1a1a1a;
+      --border-color: #2e2e2e; --text-primary: #f0f0f0; --text-secondary: #a0a0a0;
+      --shadow-color: rgba(0, 0, 0, 0.5); --highlight-color: #ffffff;
+      --accent-color: #4a6fa5; --accent-hover: #5d84c0;
+      --input-bg: rgba(255, 255, 255, 0.1);
+    }
+    [data-theme='light'] { 
+      --bg-primary: #f5f5f7; --bg-secondary: #ffffff; --surface-color: #ffffff;
+      --border-color: #e5e5e5; --text-primary: #1d1d1f; --text-secondary: #6e6e73;
+      --shadow-color: rgba(0, 0, 0, 0.1); --highlight-color: #000000;
+      --accent-color: #3a5a8c; --accent-hover: #4a6fa5;
+      --input-bg: rgba(0, 0, 0, 0.08);
+    }
+
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      background-color: var(--bg-primary);
+      color: var(--text-primary);
+      font-family: var(--font-main);
+      transition: background-color 0.5s ease;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+    }
+    canvas#particles-js {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100vw;
+      height: 100vh;
+      z-index: -1;
+      pointer-events: none;
+    }
+
+    .container { max-width: 1200px; margin: 0 auto; padding: 2rem; padding-top: 6rem; }
+    header {
+      display: flex; justify-content: space-between; align-items: center;
+      padding: 1.5rem 2.5rem; border-bottom: 1px solid var(--border-color);
+      background: rgba(26, 26, 26, 0.8); backdrop-filter: blur(20px);
+      position: fixed; top: 0; left: 0; right: 0; z-index: 1000;
+      transition: all 0.3s ease;
+    }
+    [data-theme='light'] header {
+      background: rgba(255, 255, 255, 0.8);
+    }
+    .header-left { display: flex; align-items: center; gap: 1rem; }
+    .logo-wrapper {
+      display: flex; align-items: center; justify-content: center;
+      width: 48px; height: 48px; background: transparent; border-radius: 50%;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.10); overflow: hidden;
+    }
+    .logo {
+      display: block; width: 48px; height: 48px; object-fit: contain;
+      background: transparent; border-radius: 50%; box-shadow: none; cursor: pointer;
+    }
+    .header-left h1 { font-size: 1.25rem; font-weight: 600; }
+    .user-controls { display: flex; align-items: center; gap: 0.5rem; }
+    .user-controls button {
+      background: var(--surface-color); border: 1px solid var(--border-color);
+      border-radius: 50%; width: 36px; height: 36px; font-size: 1.2rem;
+      cursor: pointer; color: var(--text-secondary); transition: all 0.2s ease;
+      display: flex; align-items: center; justify-content: center;
+    }
+    .user-controls button:hover { border-color: var(--highlight-color); color: var(--highlight-color); }
+    .logout-btn { background: var(--text-secondary); color: var(--bg-primary); }
+    .logout-btn:hover { background: var(--highlight-color); }
+
+    main {
+      flex: 1;
+      padding: 2rem;
+      display: flex;
+      flex-direction: column;
+      gap: 2rem;
+    }
+
+    .page-title {
+      text-align: center;
+      margin-bottom: 2rem;
+    }
+
+    .page-title h1 {
+      font-size: 2.5rem;
+      margin-bottom: 0.5rem;
+    }
+
+    .page-title p {
+      font-size: 1.2rem;
+      opacity: 0.8;
+    }
+
+    .back-btn {
+      display: inline-block;
+      margin-bottom: 1rem;
+      padding: 0.5rem 1rem;
+      background: var(--surface-color);
+      color: var(--text-primary);
+      border-radius: 8px;
+      text-decoration: none;
+      cursor: pointer;
+    }
+
+    .back-btn:hover {
+      background: var(--border-color);
+    }
+
+    .nexus-container {
+      max-width: 800px;
+      margin: 0 auto;
+      width: 100%;
+    }
+
+    .nexus-card {
+      background: var(--surface-color);
+      border: 1px solid var(--border-color);
+      border-radius: 16px;
+      padding: 2rem;
+      box-shadow: 0 4px 12px var(--shadow-color);
+      text-align: center;
+    }
+
+    .nexus-logo {
+      width: 120px;
+      height: 120px;
+      margin: 0 auto 2rem auto;
+      border-radius: 20px;
+      object-fit: contain;
+    }
+
+    .nexus-description {
+      font-size: 1.1rem;
+      line-height: 1.6;
+      color: var(--text-secondary);
+      margin-bottom: 2rem;
+    }
+
+    .nexus-btn {
+      display: inline-block;
+      padding: 1rem 2rem;
+      background: var(--accent-color);
+      color: white;
+      border-radius: 8px;
+      text-decoration: none;
+      font-weight: 600;
+      transition: all 0.3s ease;
+    }
+
+    .nexus-btn:hover {
+      background: var(--accent-hover);
+      transform: translateY(-2px);
+    }
+  </style>
+</head>
+<body>
+
+  <header>
+    <div class="header-left">
+      <span class="logo-wrapper">
+        <img src="logo.png" alt="Saga Logo" class="logo" onclick="window.location.href='alunoinicio.html'">
+      </span>
+      <h1>Saga Hub</h1>
+    </div>
+    <div class="user-controls">
+      <span id="username-display" style="color: var(--text-secondary); margin-right: 0.5rem; font-weight: 500;"></span>
+      <button id="theme-toggle-dark" title="Tema Escuro">🌙</button>
+      <button id="theme-toggle-light" title="Tema Claro">☀️</button>
+      <button class="logout-btn" onclick="logout()">Sair</button>
+    </div>
+  </header>
+
+  <main>
+    <a class="back-btn" onclick="window.location.href='alunoinicio.html'">← Voltar ao Início</a>
+    
+    <section class="page-title">
+      <h1>Nexus AI</h1>
+      <p>Sua assistente inteligente para estudos</p>
+    </section>
+
+    <div class="nexus-container">
+      <div class="nexus-card">
+        <img src="nexus.png" alt="Nexus AI" class="nexus-logo">
+        <h2>Converse com a Nexus</h2>
+        <div class="nexus-description">
+          A Nexus é sua assistente de estudos com inteligência artificial. Ela pode ajudar com:
+          <br><br>
+          • Explicações de conceitos complexos<br>
+          • Resolução de exercícios<br>
+          • Criação de resumos<br>
+          • Sugestões de estudo<br>
+          • Esclarecimento de dúvidas
+        </div>
+        <a href="#" class="nexus-btn" onclick="alert('Nexus AI em desenvolvimento!')">Iniciar Conversa</a>
+      </div>
+    </div>
+  </main>
+
+  <!-- Firebase SDKs -->
+  <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-auth-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-database-compat.js"></script>
+
+  <script>
+    // Firebase Config
+    const firebaseConfig = {
+      apiKey: "AIzaSyDhHGoe7GDJhMOjYSTbgqC7DHE2Dc_RR0M",
+      authDomain: "saga-1d4e2.firebaseapp.com",
+      projectId: "saga-1d4e2",
+      storageBucket: "saga-1d4e2.firebasestorage.app",
+      messagingSenderId: "419315470764",
+      appId: "1:419315470764:web:4e3fd28ca21f935bc52a09",
+      measurementId: "G-SSBL21VWE3"
+    };
+
+    // Initialize Firebase
+    firebase.initializeApp(firebaseConfig);
+    const auth = firebase.auth();
+    const db = firebase.database();
+
+    // Verificar autenticação
+    auth.onAuthStateChanged((user) => {
+      if (user) {
+        // Usuário está logado
+        const username = user.email.split('@')[0];
+        document.getElementById('username-display').textContent = `Olá, ${username}`;
+      } else {
+        // Usuário não está logado, redirecionar para login
+        window.location.href = '../login.html';
+      }
+    });
+
+    // Função de logout
+    function logout() {
+      auth.signOut()
+        .then(() => {
+          window.location.href = '../login.html';
+        })
+        .catch((error) => {
+          console.error('Erro ao fazer logout:', error);
+        });
+    }
+
+    // Sistema de tema padrão
+    const applyTheme = (theme) => {
+      document.documentElement.setAttribute('data-theme', theme);
+      localStorage.setItem('saga-theme', theme);
+    };
+    
+    document.getElementById('theme-toggle-dark').addEventListener('click', () => applyTheme('dark'));
+    document.getElementById('theme-toggle-light').addEventListener('click', () => applyTheme('light'));
+    
+    window.addEventListener('DOMContentLoaded', () => {
+      applyTheme(localStorage.getItem('saga-theme') || 'dark');
+    });
+  </script>
+</body>
+</html>

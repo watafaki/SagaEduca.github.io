@@ -1,0 +1,1262 @@
+<!DOCTYPE html>
+<html lang="pt-BR" data-theme="dark">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Dashboard | S.A.G.A.</title>
+  <link rel="icon" type="image/png" href="../logo.png" />
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="../universal-style.css">
+    <script src="../vinheta-animation.js"></script>
+    <script src="../custom-progress-bar.js"></script>
+    <script type="module">
+        // Firebase Configuration
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/9.6.1/firebase-app.js";
+        import { getAuth, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/9.6.1/firebase-auth.js";
+        import { getDatabase, ref, onValue } from "https://www.gstatic.com/firebasejs/9.6.1/firebase-database.js";
+
+        const firebaseConfig = {
+            apiKey: "AIzaSyDhHGoe7GDJhMOjYSTbgqC7DHE2Dc_RR0M",
+            authDomain: "saga-1d4e2.firebaseapp.com",
+            databaseURL: "https://saga-1d4e2-default-rtdb.firebaseio.com",
+            projectId: "saga-1d4e2",
+            storageBucket: "saga-1d4e2.firebasestorage.app",
+            messagingSenderId: "419315470764",
+            appId: "1:419315470764:web:4e3fd28ca21f935bc52a09",
+            measurementId: "G-SSBL21VWE3"
+        };
+
+        const app = initializeApp(firebaseConfig);
+        const auth = getAuth(app);
+        const database = getDatabase(app);
+
+        let currentUser = null;
+        let userData = null;
+
+        // Sidebar functionality
+        function initSidebar() {
+            const sidebarToggle = document.getElementById('sidebar-toggle');
+            const mobileToggle = document.getElementById('mobile-menu-toggle');
+            const sidebar = document.querySelector('.sidebar');
+            const mainContent = document.querySelector('.main-content');
+
+            // Create overlay for mobile
+            const overlay = document.createElement('div');
+            overlay.className = 'sidebar-overlay';
+            document.body.appendChild(overlay);
+
+            // Desktop toggle
+            sidebarToggle?.addEventListener('click', () => {
+                sidebar.classList.toggle('collapsed');
+                mainContent.classList.toggle('expanded');
+            });
+
+            // Mobile toggle
+            mobileToggle?.addEventListener('click', () => {
+                sidebar.classList.toggle('mobile-open');
+                overlay.classList.toggle('active');
+            });
+
+            // Close on overlay click
+            overlay.addEventListener('click', () => {
+                sidebar.classList.remove('mobile-open');
+                overlay.classList.remove('active');
+            });
+        }
+
+        // Load user data from Firebase
+        function loadUserData() {
+            if (!currentUser) return;
+
+            const userRef = ref(database, `users/${currentUser.uid}`);
+            onValue(userRef, (snapshot) => {
+                const data = snapshot.val();
+                if (data) {
+                    userData = data;
+                    updateUserInfo();
+                }
+            });
+        }
+
+        // Update user info in UI
+        function updateUserInfo() {
+            if (!userData) return;
+
+            // Update header
+            const headerName = document.getElementById('header-user-name');
+            const headerClass = document.getElementById('header-user-class');
+            const sidebarName = document.getElementById('sidebar-user-name');
+            const sidebarRole = document.getElementById('sidebar-user-role');
+
+            if (headerName) headerName.textContent = userData.nome || currentUser.email;
+            if (headerClass) headerClass.textContent = userData.turma || 'Aluno';
+            if (sidebarName) sidebarName.textContent = userData.nome || currentUser.email;
+            if (sidebarRole) sidebarRole.textContent = userData.turma || 'Aluno';
+        }
+
+        // Logout function
+        window.logout = function() {
+            if (confirm('Deseja realmente sair?')) {
+                signOut(auth).then(() => {
+                    window.location.href = '../login.html';
+                });
+            }
+        };
+
+        // Theme functionality
+        const applyTheme = (theme) => {
+            document.documentElement.setAttribute('data-theme', theme);
+            localStorage.setItem('saga-theme', theme);
+
+            // Atualiza a logo baseada no tema
+            const logo = document.querySelector('.logo');
+            if (logo) {
+                if (theme === 'light' || theme === 'claro') {
+                    logo.src = '../logoinvertido.png';
+                } else {
+                    logo.src = '../logo.png';
+                }
+            }
+        };
+
+        // Initialize when authenticated
+        onAuthStateChanged(auth, (user) => {
+            if (user) {
+                currentUser = user;
+                loadUserData();
+                initSidebar();
+
+                // Initialize theme buttons
+                document.getElementById('theme-toggle-dark')?.addEventListener('click', () => applyTheme('dark'));
+                document.getElementById('theme-toggle-light')?.addEventListener('click', () => applyTheme('light'));
+
+                // Apply saved theme
+                applyTheme(localStorage.getItem('saga-theme') || 'dark');
+            } else {
+                window.location.href = '../login.html';
+            }
+        });
+    </script>
+  <style>
+    /* === Design padrão do SAGA === */
+    :root { --font-main: 'Inter', sans-serif; }
+    [data-theme='dark'] { 
+      --bg-primary: #0a0a0a; --bg-secondary: #141414; --surface-color: #1a1a1a;
+      --border-color: #2e2e2e; --text-primary: #f0f0f0; --text-secondary: #a0a0a0;
+      --shadow-color: rgba(0, 0, 0, 0.5); --highlight-color: #ffffff;
+      --accent-color: #4a6fa5; --accent-hover: #5d84c0;
+      --input-bg: rgba(255, 255, 255, 0.1);
+    }
+    [data-theme='light'] { 
+      --bg-primary: #f5f5f7; --bg-secondary: #ffffff; --surface-color: #ffffff;
+      --border-color: #e5e5e5; --text-primary: #1d1d1f; --text-secondary: #6e6e73;
+      --shadow-color: rgba(0, 0, 0, 0.1); --highlight-color: #000000;
+      --accent-color: #3a5a8c; --accent-hover: #4a6fa5;
+      --input-bg: rgba(0, 0, 0, 0.08);
+    }
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      background-color: var(--bg-primary);
+      color: var(--text-primary);
+      font-family: var(--font-main);
+      transition: background-color 0.5s ease;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+    }
+    canvas#particles-js {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100vw;
+      height: 100vh;
+      z-index: -1;
+      pointer-events: none;
+    }
+
+    .container { max-width: 1200px; margin: 0 auto; padding: 2rem; padding-top: 6rem; }
+
+    /* Sidebar Styles */
+    .sidebar {
+        width: 280px;
+        height: 100vh;
+        background: var(--surface-color);
+        border-right: 1px solid var(--border-color);
+        display: flex;
+        flex-direction: column;
+        position: fixed;
+        left: 0;
+        top: 0;
+        z-index: 1000;
+        box-shadow: 2px 0 10px rgba(0, 0, 0, 0.1);
+    }
+
+    .sidebar-header {
+        padding: 2rem;
+        border-bottom: 1px solid var(--border-color);
+        display: flex;
+        align-items: center;
+        gap: 1rem;
+        min-height: 80px;
+    }
+
+    .sidebar-logo {
+        width: 40px;
+        height: 40px;
+        object-fit: contain;
+        border-radius: 8px;
+    }
+
+    .sidebar-header h2 {
+        font-size: 1.5rem;
+        font-weight: 700;
+        color: var(--text-primary);
+        margin: 0;
+    }
+
+    .sidebar-menu {
+        flex: 1;
+        padding: 1rem 0;
+    }
+
+    .menu-item {
+        display: flex;
+        align-items: center;
+        gap: 1rem;
+        padding: 1rem 2rem;
+        color: var(--text-secondary);
+        text-decoration: none;
+        transition: all 0.3s ease;
+        border-left: 3px solid transparent;
+        cursor: pointer;
+    }
+
+    .menu-item:hover {
+        background: var(--bg-secondary);
+        color: var(--text-primary);
+        border-left-color: var(--highlight-color);
+    }
+
+    .menu-item.active {
+        background: var(--bg-secondary);
+        color: var(--text-primary);
+        border-left-color: #4CAF50;
+        font-weight: 600;
+    }
+
+    .menu-item svg {
+        flex-shrink: 0;
+    }
+
+    .sidebar-footer {
+        padding: 1.5rem;
+        border-top: 1px solid var(--border-color);
+    }
+
+    .user-info {
+        display: flex;
+        align-items: center;
+        gap: 1rem;
+        padding: 1rem;
+        background: var(--bg-secondary);
+        border-radius: 12px;
+        margin-bottom: 1rem;
+    }
+
+    .user-avatar {
+        width: 40px;
+        height: 40px;
+        background: linear-gradient(135deg, #4CAF50, #45a049);
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 1.2rem;
+        color: white;
+    }
+
+    .user-details {
+        flex: 1;
+        min-width: 0;
+    }
+
+    .user-details .user-name {
+        display: block;
+        font-weight: 600;
+        color: var(--text-primary);
+        font-size: 0.9rem;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+    }
+
+    .user-details .user-role {
+        display: block;
+        color: var(--text-secondary);
+        font-size: 0.8rem;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+    }
+
+    .logout-btn {
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+        width: 100%;
+        padding: 1rem;
+        background: transparent;
+        border: 1px solid var(--border-color);
+        border-radius: 8px;
+        color: var(--text-secondary);
+        cursor: pointer;
+        transition: all 0.3s ease;
+        font-size: 0.9rem;
+    }
+
+    .logout-btn:hover {
+        background: #ff4757;
+        color: white;
+        border-color: #ff4757;
+    }
+
+    /* Main Content */
+    .main-content {
+        flex: 1;
+        margin-left: 280px;
+        min-height: 100vh;
+        background: var(--bg-primary);
+    }
+
+    header {
+      display: flex; justify-content: space-between; align-items: center;
+      padding: 1.5rem 2.5rem; border-bottom: 1px solid var(--border-color);
+      background: rgba(26, 26, 26, 0.8); backdrop-filter: blur(20px);
+      position: fixed; top: 0; left: 0; right: 0; z-index: 1000;
+      transition: all 0.3s ease;
+    }
+
+    [data-theme='light'] header {
+        background: rgba(255, 255, 255, 0.8);
+    }
+
+    .header-left { display: flex; align-items: center; gap: 1rem; }
+
+    .logo-wrapper {
+      display: flex; align-items: center; justify-content: center;
+      width: 48px; height: 48px; background: transparent; border-radius: 50%;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.10); overflow: hidden;
+    }
+    .logo {
+      display: block; width: 48px; height: 48px; object-fit: contain;
+      background: transparent; border-radius: 50%; box-shadow: none; cursor: pointer;
+    }
+
+    .header-left h1 {
+        font-size: 1.25rem;
+        font-weight: 600;
+    }
+
+    .user-controls {
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+    }
+
+    .user-controls button {
+        background: var(--surface-color);
+        border: 1px solid var(--border-color);
+        border-radius: 50%;
+        width: 36px;
+        height: 36px;
+        font-size: 1.2rem;
+        cursor: pointer;
+        color: var(--text-secondary);
+        transition: all 0.2s ease;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+
+    .user-controls button:hover { border-color: var(--highlight-color); color: var(--highlight-color); }
+    .logout-btn { background: var(--text-secondary); color: var(--bg-primary); }
+    .logout-btn:hover { background: var(--highlight-color); }
+
+    main {
+      flex: 1;
+      padding: 2rem;
+      display: flex;
+      flex-direction: column;
+      gap: 2rem;
+    }
+
+    .page-title {
+      text-align: center;
+      margin-bottom: 2rem;
+    }
+
+    .page-title h1 {
+      font-size: 2.5rem;
+      margin-bottom: 0.5rem;
+    }
+
+    .page-title p {
+      font-size: 1.2rem;
+      opacity: 0.8;
+    }
+
+    .back-btn {
+      display: inline-block;
+      margin-bottom: 1rem;
+      padding: 0.5rem 1rem;
+      background: var(--surface-color);
+      color: var(--text-primary);
+      border-radius: 8px;
+      text-decoration: none;
+      cursor: pointer;
+    }
+
+    .back-btn:hover {
+      background: var(--border-color);
+    }
+
+    /* Sidebar Toggle */
+    .sidebar-toggle {
+        display: none;
+        background: transparent;
+        border: none;
+        color: var(--text-secondary);
+        cursor: pointer;
+        padding: 8px;
+        border-radius: 4px;
+        transition: all 0.3s ease;
+    }
+
+    .sidebar-toggle:hover {
+        background: var(--bg-secondary);
+        color: var(--text-primary);
+    }
+
+    /* Mobile Menu Toggle */
+    .mobile-menu-toggle {
+        display: none;
+        background: transparent;
+        border: 1px solid var(--border-color);
+        border-radius: 8px;
+        width: 36px;
+        height: 36px;
+        cursor: pointer;
+        color: var(--text-secondary);
+        transition: all 0.3s ease;
+        align-items: center;
+        justify-content: center;
+        font-size: 1rem;
+    }
+
+    .mobile-menu-toggle:hover {
+        background: var(--bg-secondary);
+        border-color: var(--highlight-color);
+        color: var(--highlight-color);
+    }
+
+    /* Sidebar Collapsed State */
+    .sidebar.collapsed {
+        transform: translateX(-240px);
+    }
+
+    .main-content.expanded {
+        margin-left: 40px;
+    }
+
+    /* Responsive */
+    @media (max-width: 1024px) {
+        .sidebar-toggle {
+            display: block;
+        }
+
+        .mobile-menu-toggle {
+            display: flex;
+        }
+
+        .sidebar {
+            transform: translateX(-280px);
+            z-index: 1001;
+        }
+
+        .sidebar.mobile-open {
+            transform: translateX(0);
+        }
+
+        .main-content {
+            margin-left: 0;
+        }
+
+        header {
+            left: 0;
+        }
+
+        .sidebar-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100vw;
+            height: 100vh;
+            background: rgba(0, 0, 0, 0.5);
+            z-index: 1000;
+            opacity: 0;
+            visibility: hidden;
+            transition: all 0.3s ease;
+        }
+
+        .sidebar-overlay.active {
+            opacity: 1;
+            visibility: visible;
+        }
+    }
+    .logo-wrapper {
+      display: flex; align-items: center; justify-content: center;
+      width: 48px; height: 48px; background: transparent; border-radius: 50%;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.10); overflow: hidden;
+    }
+    .header-left h1 { font-size: 1.25rem; font-weight: 600; }
+    .user-controls { display: flex; align-items: center; gap: 0.5rem; }
+    .user-controls button {
+      background: var(--surface-color); border: 1px solid var(--border-color);
+      border-radius: 50%; width: 36px; height: 36px; font-size: 1.2rem;
+      cursor: pointer; color: var(--text-secondary); transition: all 0.2s ease;
+      display: flex; align-items: center; justify-content: center;
+    }
+    .user-controls button:hover { border-color: var(--highlight-color); color: var(--highlight-color); }
+    .logout-btn { background: var(--text-secondary); color: var(--bg-primary); }
+    .logout-btn:hover { background: var(--highlight-color); }
+    
+    /* Estilos específicos do dashboard */
+    .dashboard-container {
+      max-width: 1200px;
+      margin: 0 auto;
+      width: 100%;
+    }
+
+    .dashboard-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 2rem;
+      flex-wrap: wrap;
+      gap: 1rem;
+    }
+
+    .dashboard-header h2 {
+      font-size: 1.8rem;
+      margin: 0;
+    }
+
+    .dashboard-header .period-selector {
+      display: flex;
+      gap: 0.5rem;
+    }
+
+    .dashboard-header .period-selector button {
+      padding: 0.5rem 1rem;
+      border: none;
+      border-radius: 20px;
+      background: var(--card-bg);
+      color: var(--text-color);
+      cursor: pointer;
+      transition: all 0.3s ease;
+    }
+
+    .dashboard-header .period-selector button.active {
+      background: var(--accent-color);
+      color: white;
+    }
+
+    .dashboard-grid {
+      display: grid;
+      grid-template-columns: 2fr 1fr;
+      gap: 2rem;
+    }
+
+    .dashboard-card {
+      background: var(--card-bg);
+      border-radius: 15px;
+      padding: 2rem;
+      box-shadow: 0 5px 15px var(--shadow);
+      transition: transform 0.3s ease, box-shadow 0.3s ease;
+      animation: fadeIn 0.5s ease-out;
+    }
+
+    .dashboard-card:hover {
+      transform: translateY(-5px);
+      box-shadow: 0 15px 30px var(--shadow);
+    }
+
+    .dashboard-card h3 {
+      font-size: 1.5rem;
+      margin-bottom: 1.5rem;
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+    }
+
+    .dashboard-card h3 .icon {
+      font-size: 1.8rem;
+    }
+
+    .performance-chart {
+      height: 300px;
+      margin-bottom: 1.5rem;
+      position: relative;
+    }
+
+    .chart-container {
+      position: relative;
+      height: 100%;
+      width: 100%;
+    }
+
+    .chart-legend {
+      display: flex;
+      justify-content: center;
+      gap: 1.5rem;
+      margin-top: 1rem;
+    }
+
+    .legend-item {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      font-size: 0.9rem;
+    }
+
+    .legend-color {
+      width: 12px;
+      height: 12px;
+      border-radius: 50%;
+    }
+
+    .legend-color.color-1 {
+      background: var(--accent-color);
+    }
+
+    .legend-color.color-2 {
+      background: var(--warning-color);
+    }
+
+    .legend-color.color-3 {
+      background: var(--success-color);
+    }
+
+    .stats-grid {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 1.5rem;
+      margin-bottom: 1.5rem;
+    }
+
+    .stat-item {
+      background: var(--input-bg);
+      border-radius: 10px;
+      padding: 1.5rem;
+      text-align: center;
+      transition: transform 0.3s ease;
+    }
+
+    .stat-item:hover {
+      transform: translateY(-5px);
+    }
+
+    .stat-item h4 {
+      font-size: 1rem;
+      margin-bottom: 0.5rem;
+      opacity: 0.8;
+    }
+
+    .stat-item p {
+      font-size: 2rem;
+      font-weight: bold;
+    }
+
+    .stat-item.positive p {
+      color: var(--success-color);
+    }
+
+    .stat-item.warning p {
+      color: var(--warning-color);
+    }
+
+    .stat-item.negative p {
+      color: var(--error-color);
+    }
+
+    .improvement-suggestions {
+      margin-top: 2rem;
+    }
+
+    .suggestion-item {
+      background: var(--input-bg);
+      border-radius: 10px;
+      padding: 1.5rem;
+      margin-bottom: 1rem;
+      transition: all 0.3s ease;
+      border-left: 4px solid var(--accent-color);
+    }
+
+    .suggestion-item:hover {
+      transform: translateX(5px);
+      box-shadow: 0 5px 15px var(--shadow);
+    }
+
+    .suggestion-item h4 {
+      font-size: 1.2rem;
+      margin-bottom: 0.5rem;
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+    }
+
+    .suggestion-item p {
+      font-size: 0.95rem;
+      line-height: 1.5;
+      opacity: 0.9;
+    }
+
+    .recent-activities {
+      margin-top: 1.5rem;
+    }
+
+    .activity-item {
+      padding: 1rem;
+      border-bottom: 1px solid var(--border-color);
+      display: flex;
+      align-items: center;
+      gap: 1rem;
+      transition: background 0.3s ease;
+    }
+
+    .activity-item:hover {
+      background: var(--input-bg);
+    }
+
+    .activity-item:last-child {
+      border-bottom: none;
+    }
+
+    .activity-icon {
+      width: 40px;
+      height: 40px;
+      border-radius: 50%;
+      background: var(--accent-color);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 1.2rem;
+      color: white;
+    }
+
+    .activity-content {
+      flex: 1;
+    }
+
+    .activity-title {
+      font-weight: bold;
+      margin-bottom: 0.2rem;
+    }
+
+    .activity-date {
+      font-size: 0.8rem;
+      opacity: 0.7;
+    }
+
+    .progress-container {
+      margin-top: 1.5rem;
+    }
+
+    .progress-item {
+      margin-bottom: 1.5rem;
+    }
+
+    .progress-header {
+      display: flex;
+      justify-content: space-between;
+      margin-bottom: 0.5rem;
+    }
+
+    .progress-title {
+      font-weight: bold;
+    }
+
+    .progress-value {
+      font-weight: bold;
+    }
+
+    .progress-bar {
+      height: 8px;
+      background: var(--input-bg);
+      border-radius: 4px;
+      overflow: hidden;
+    }
+
+    .progress-fill {
+      height: 100%;
+      background: var(--accent-color);
+      border-radius: 4px;
+      transition: width 1s ease;
+    }
+
+    .progress-fill.warning {
+      background: var(--warning-color);
+    }
+
+    .progress-fill.success {
+      background: var(--success-color);
+    }
+
+    @media (max-width: 992px) {
+      .dashboard-grid {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    @media (max-width: 768px) {
+      .stats-grid {
+        grid-template-columns: 1fr;
+      }
+    }
+  </style>
+</head>
+<body>
+
+  <header>
+    <div class="header-left">
+      <span class="logo-wrapper">
+        <img src="logo.png" alt="Saga Logo" class="logo" onclick="window.location.href='alunoinicio.html'">
+      </span>
+      <h1>Saga Hub</h1>
+    </div>
+    <div class="user-controls">
+      <span id="username-display" style="color: var(--text-secondary); margin-right: 0.5rem; font-weight: 500;"></span>
+      <button id="theme-toggle-dark" title="Tema Escuro">🌙</button>
+      <button id="theme-toggle-light" title="Tema Claro">☀️</button>
+      <button class="logout-btn" onclick="logout()">Sair</button>
+    </div>
+  </header>
+    <main>
+    <a class="back-btn" onclick="window.location.href='alunoinicio.html'">← Voltar ao Início</a>
+    
+    <section class="page-title">
+      <h1>Dashboard Acadêmico</h1>
+      <p>Acompanhe seu desempenho e receba sugestões personalizadas</p>
+    </section>
+
+    <div class="dashboard-container">
+      <div class="dashboard-header">
+        <h2>Visão Geral do Desempenho</h2>
+        <div class="period-selector">
+          <button class="active" onclick="changePeriod('month')">Mês</button>
+          <button onclick="changePeriod('trimester')">Trimestre</button>
+          <button onclick="changePeriod('semester')">Semestre</button>
+        </div>
+      </div>
+      
+      <div class="dashboard-grid">
+        <div class="dashboard-card">
+          <h3><span class="icon">📊</span> Desempenho Acadêmico</h3>
+          
+          <div class="performance-chart">
+            <canvas id="performanceChart"></canvas>
+          </div>
+          
+          <div class="chart-legend">
+            <div class="legend-item">
+              <div class="legend-color color-1"></div>
+              <span>Notas</span>
+            </div>
+            <div class="legend-item">
+              <div class="legend-color color-2"></div>
+              <span>Atividades Entregues</span>
+            </div>
+            <div class="legend-item">
+              <div class="legend-color color-3"></div>
+              <span>Média da Turma</span>
+            </div>
+          </div>
+          
+          <div class="stats-grid">
+            <div class="stat-item positive">
+              <h4>Média Geral</h4>
+              <p id="media-geral">8.5</p>
+            </div>
+            
+            <div class="stat-item">
+              <h4>Atividades Concluídas</h4>
+              <p id="atividades-concluidas">12/15</p>
+            </div>
+            
+            <div class="stat-item warning">
+              <h4>Prazo Médio</h4>
+              <p id="prazo-medio">2 dias</p>
+            </div>
+            
+            <div class="stat-item">
+              <h4>Participação</h4>
+              <p id="participacao">85%</p>
+            </div>
+          </div>
+          
+          <div class="improvement-suggestions">
+            <h3><span class="icon">💡</span> Sugestões de Melhoria</h3>
+            
+            <div id="suggestions-container">
+              <!-- Sugestões serão carregadas dinamicamente -->
+            </div>
+          </div>
+        </div>
+        
+        <div class="dashboard-card">
+          <h3><span class="icon">🎯</span> Progresso e Metas</h3>
+          
+          <div class="progress-container">
+            <div class="progress-item">
+              <div class="progress-header">
+                <div class="progress-title">Matemática</div>
+                <div class="progress-value">75%</div>
+              </div>
+              <div class="progress-bar">
+                <div class="progress-fill" style="width: 75%"></div>
+              </div>
+            </div>
+            
+            <div class="progress-item">
+              <div class="progress-header">
+                <div class="progress-title">Português</div>
+                <div class="progress-value">90%</div>
+              </div>
+              <div class="progress-bar">
+                <div class="progress-fill success" style="width: 90%"></div>
+              </div>
+            </div>
+            
+            <div class="progress-item">
+              <div class="progress-header">
+                <div class="progress-title">Ciências</div>
+                <div class="progress-value">60%</div>
+              </div>
+              <div class="progress-bar">
+                <div class="progress-fill warning" style="width: 60%"></div>
+              </div>
+            </div>
+            
+            <div class="progress-item">
+              <div class="progress-header">
+                <div class="progress-title">História</div>
+                <div class="progress-value">85%</div>
+              </div>
+              <div class="progress-bar">
+                <div class="progress-fill" style="width: 85%"></div>
+              </div>
+            </div>
+          </div>
+          
+          <div class="recent-activities">
+            <h3><span class="icon">🔔</span> Atividades Recentes</h3>
+            
+            <div id="activities-container">
+              <!-- Atividades serão carregadas dinamicamente -->
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </main>
+
+  <!-- Firebase SDKs -->
+  <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-auth-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-database-compat.js"></script>
+  
+  <!-- Chart.js -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+  <script>
+    // Firebase Config
+    const firebaseConfig = {
+      apiKey: "AIzaSyDhHGoe7GDJhMOjYSTbgqC7DHE2Dc_RR0M",
+      authDomain: "saga-1d4e2.firebaseapp.com",
+      projectId: "saga-1d4e2",
+      storageBucket: "saga-1d4e2.firebasestorage.app",
+      messagingSenderId: "419315470764",
+      appId: "1:419315470764:web:4e3fd28ca21f935bc52a09",
+      measurementId: "G-SSBL21VWE3"
+    };
+
+    // Initialize Firebase
+    firebase.initializeApp(firebaseConfig);
+    const auth = firebase.auth();
+    const db = firebase.database();
+
+    // Verificar autenticação
+    auth.onAuthStateChanged((user) => {
+      if (user) {
+        // Usuário está logado
+        const username = user.email.split('@')[0];
+        document.getElementById('username-display').textContent = `Olá, ${username}`;
+        
+        // Carregar dados do dashboard
+        loadDashboardData(user.uid);
+      } else {
+        // Usuário não está logado, redirecionar para login
+        window.location.href = '../login.html';
+      }
+    });
+
+    // Função de logout
+    function logout() {
+      auth.signOut()
+        .then(() => {
+          window.location.href = '../login.html';
+        })
+        .catch((error) => {
+          console.error('Erro ao fazer logout:', error);
+        });
+    }
+
+    // Carregar dados do dashboard
+    function loadDashboardData(userId) {
+      // Carregar dados do usuário
+      db.ref(`usuarios/${userId}`).once('value')
+        .then((snapshot) => {
+          const userData = snapshot.val() || {};
+          
+          // Atualizar estatísticas
+          document.getElementById('media-geral').textContent = userData.mediaGeral || '8.5';
+          document.getElementById('atividades-concluidas').textContent = userData.atividadesConcluidas || '12/15';
+          document.getElementById('prazo-medio').textContent = userData.prazoMedio || '2 dias';
+          document.getElementById('participacao').textContent = userData.participacao || '85%';
+          
+          // Inicializar gráfico
+          initPerformanceChart();
+          
+          // Carregar sugestões
+          loadSuggestions();
+          
+          // Carregar atividades recentes
+          loadRecentActivities();
+        })
+        .catch((error) => {
+          console.error('Erro ao carregar dados do usuário:', error);
+        });
+    }
+
+    // Inicializar gráfico de desempenho
+    function initPerformanceChart() {
+      const ctx = document.getElementById('performanceChart').getContext('2d');
+      
+      // Dados de exemplo
+      const data = {
+        labels: ['Janeiro', 'Fevereiro', 'Março', 'Abril', 'Maio'],
+        datasets: [
+          {
+            label: 'Notas',
+            data: [7.5, 8.0, 7.8, 8.5, 9.0],
+            borderColor: getComputedStyle(document.documentElement).getPropertyValue('--accent-color').trim(),
+            backgroundColor: 'transparent',
+            tension: 0.4
+          },
+          {
+            label: 'Atividades Entregues',
+            data: [70, 80, 75, 90, 95],
+            borderColor: getComputedStyle(document.documentElement).getPropertyValue('--warning-color').trim(),
+            backgroundColor: 'transparent',
+            tension: 0.4
+          },
+          {
+            label: 'Média da Turma',
+            data: [7.0, 7.2, 7.5, 7.8, 8.0],
+            borderColor: getComputedStyle(document.documentElement).getPropertyValue('--success-color').trim(),
+            backgroundColor: 'transparent',
+            tension: 0.4,
+            borderDash: [5, 5]
+          }
+        ]
+      };
+      
+      const config = {
+        type: 'line',
+        data: data,
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          plugins: {
+            legend: {
+              display: false
+            },
+            tooltip: {
+              mode: 'index',
+              intersect: false
+            }
+          },
+          scales: {
+            y: {
+              beginAtZero: true,
+              grid: {
+                color: 'rgba(255, 255, 255, 0.1)'
+              },
+              ticks: {
+                color: getComputedStyle(document.documentElement).getPropertyValue('--text-color').trim()
+              }
+            },
+            x: {
+              grid: {
+                color: 'rgba(255, 255, 255, 0.1)'
+              },
+              ticks: {
+                color: getComputedStyle(document.documentElement).getPropertyValue('--text-color').trim()
+              }
+            }
+          }
+        }
+      };
+      
+      new Chart(ctx, config);
+    }
+
+    // Carregar sugestões
+    function loadSuggestions() {
+      const suggestionsContainer = document.getElementById('suggestions-container');
+      
+      // Sugestões de exemplo
+      const suggestions = [
+        {
+          title: 'Melhore seu desempenho em Ciências',
+          content: 'Dedique mais tempo aos estudos de Ciências, especialmente nos tópicos de Biologia Celular e Química Orgânica. Recomendamos utilizar técnicas de estudo ativo como mapas mentais e resumos escritos.'
+        },
+        {
+          title: 'Entregue atividades com antecedência',
+          content: 'Você tem entregado atividades próximo ao prazo final. Tente começar as tarefas mais cedo para evitar o estresse de última hora e ter tempo para revisões.'
+        },
+        {
+          title: 'Participe mais das discussões no chat',
+          content: 'Sua participação no chat da comunidade está abaixo da média. Interagir mais com seus colegas pode ajudar na compreensão dos conteúdos e no desenvolvimento de habilidades de comunicação.'
+        }
+      ];
+      
+      suggestions.forEach(suggestion => {
+        const suggestionItem = document.createElement('div');
+        suggestionItem.className = 'suggestion-item';
+        suggestionItem.innerHTML = `
+          <h4>💡 ${suggestion.title}</h4>
+          <p>${suggestion.content}</p>
+        `;
+        
+        suggestionsContainer.appendChild(suggestionItem);
+      });
+    }
+
+    // Carregar atividades recentes
+    function loadRecentActivities() {
+      const activitiesContainer = document.getElementById('activities-container');
+      
+      // Atividades de exemplo
+      const activities = [
+        {
+          icon: '📝',
+          title: 'Entregou atividade de Matemática',
+          date: 'Hoje, 14:30'
+        },
+        {
+          icon: '📚',
+          title: 'Acessou material de Português',
+          date: 'Ontem, 10:15'
+        },
+        {
+          icon: '💬',
+          title: 'Participou do chat da comunidade',
+          date: '2 dias atrás'
+        },
+        {
+          icon: '📅',
+          title: 'Atualizou cronograma de estudos',
+          date: '3 dias atrás'
+        }
+      ];
+      
+      activities.forEach(activity => {
+        const activityItem = document.createElement('div');
+        activityItem.className = 'activity-item';
+        activityItem.innerHTML = `
+          <div class="activity-icon">${activity.icon}</div>
+          <div class="activity-content">
+            <div class="activity-title">${activity.title}</div>
+            <div class="activity-date">${activity.date}</div>
+          </div>
+        `;
+        
+        activitiesContainer.appendChild(activityItem);
+      });
+    }
+
+    // Mudar período do dashboard
+    function changePeriod(period) {
+      // Atualizar botões
+      document.querySelectorAll('.period-selector button').forEach(button => {
+        button.classList.remove('active');
+      });
+      
+      document.querySelector(`.period-selector button[onclick="changePeriod('${period}')"]`).classList.add('active');
+      
+      // Aqui você pode atualizar os dados do dashboard com base no período selecionado
+      // Por enquanto, apenas um exemplo visual
+      
+      // Atualizar estatísticas com dados fictícios
+      if (period === 'month') {
+        document.getElementById('media-geral').textContent = '8.5';
+        document.getElementById('atividades-concluidas').textContent = '12/15';
+      } else if (period === 'trimester') {
+        document.getElementById('media-geral').textContent = '8.2';
+        document.getElementById('atividades-concluidas').textContent = '35/40';
+      } else if (period === 'semester') {
+        document.getElementById('media-geral').textContent = '8.0';
+        document.getElementById('atividades-concluidas').textContent = '70/80';
+      }
+    }
+
+    // Sistema de tema padrão
+    const applyTheme = (theme) => {
+      document.documentElement.setAttribute('data-theme', theme);
+      localStorage.setItem('saga-theme', theme);
+      
+      // Atualizar gráfico se existir
+      if (window.performanceChart) {
+        window.performanceChart.update();
+      }
+    };
+    
+    // Funcionalidade dos botões de tema
+    const applyTheme = (theme) => {
+      document.documentElement.setAttribute('data-theme', theme);
+      localStorage.setItem('saga-theme', theme);
+      
+      // Atualiza a logo baseada no tema
+      const logo = document.querySelector('.logo');
+      if (logo) {
+        if (theme === 'light' || theme === 'claro') {
+          logo.src = '../logoinvertido.png';
+        } else {
+          logo.src = '../logo.png';
+        }
+      }
+    };
+    
+    document.getElementById('theme-toggle-dark')?.addEventListener('click', () => applyTheme('dark'));
+    document.getElementById('theme-toggle-light')?.addEventListener('click', () => applyTheme('light'));
+    
+    document.addEventListener('DOMContentLoaded', () => {
+      applyTheme(localStorage.getItem('saga-theme') || 'dark');
+    });
+
+  </script>
+</body>
+</html>

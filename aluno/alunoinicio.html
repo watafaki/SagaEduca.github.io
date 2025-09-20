@@ -1,0 +1,917 @@
+<!DOCTYPE html>
+<html lang="pt-BR" data-theme="dark">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+    <title>Saga - Hub do Aluno</title>
+    <link rel="icon" type="image/png" href="../logo.png" />
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
+
+    <style>
+        :root { --font-main: 'Inter', sans-serif; }
+        [data-theme='dark'] { 
+            --bg-primary: #0a0a0a; --bg-secondary: #141414; --surface-color: #1a1a1a;
+            --border-color: #2e2e2e; --text-primary: #f0f0f0; --text-secondary: #a0a0a0;
+            --shadow-color: rgba(0, 0, 0, 0.5); --highlight-color: #ffffff;
+            --accent-color: #4a6fa5; --accent-hover: #5d84c0;
+        }
+        [data-theme='light'] { 
+            --bg-primary: #f5f5f7; --bg-secondary: #ffffff; --surface-color: #ffffff;
+            --border-color: #e5e5e5; --text-primary: #1d1d1f; --text-secondary: #6e6e73;
+            --shadow-color: rgba(0, 0, 0, 0.1); --highlight-color: #000000;
+            --accent-color: #3a5a8c; --accent-hover: #4a6fa5;
+        }
+        *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+        body {
+            background-color: var(--bg-primary);
+            color: var(--text-primary);
+            font-family: var(--font-main);
+            transition: background-color 0.5s ease, color 0.5s ease;
+            min-height: 100vh;
+            display: flex;
+        }
+        
+        /* Animações suaves para mudanças de tema */
+        * {
+            transition: background-color 0.3s ease, color 0.3s ease, border-color 0.3s ease, box-shadow 0.3s ease;
+        }
+
+        /* === ESTRUTURA COM SIDEBAR === */
+        .sidebar {
+            width: 260px;
+            height: 100vh;
+            background: var(--bg-secondary);
+            border-right: 1px solid var(--border-color);
+            position: fixed;
+            top: 0;
+            left: 0;
+            display: flex;
+            flex-direction: column;
+            transition: transform 0.3s ease-in-out;
+            z-index: 1100;
+        }
+        .sidebar-header {
+            padding: 1.5rem;
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+            border-bottom: 1px solid var(--border-color);
+        }
+        .sidebar-header .logo { width: 40px; height: 40px; }
+        .sidebar-header h1 { font-size: 1.5rem; }
+        .sidebar-menu { flex-grow: 1; padding: 1rem 0; }
+        .menu-item {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+            padding: 0.9rem 1.5rem;
+            color: var(--text-secondary);
+            text-decoration: none;
+            border-left: 4px solid transparent;
+            transition: all 0.2s ease;
+        }
+        .menu-item:hover {
+            background-color: var(--surface-color);
+            color: var(--text-primary);
+        }
+        .menu-item.active {
+            color: var(--text-primary);
+            font-weight: 600;
+            border-left-color: var(--accent-color);
+            background-color: var(--surface-color);
+        }
+        .menu-item i { font-size: 1.1rem; width: 24px; text-align: center; }
+
+        .main-container {
+            flex-grow: 1;
+            margin-left: 260px; /* Largura da sidebar */
+            display: flex;
+            flex-direction: column;
+            transition: margin-left 0.3s ease-in-out;
+        }
+        
+        /* === HEADER === */
+        header {
+            display: flex; justify-content: space-between; align-items: center;
+            padding: 1rem 2rem; border-bottom: 1px solid var(--border-color);
+            background: var(--surface-color);
+            width: 100%;
+        }
+        .header-left { display: flex; align-items: center; gap: 1rem; }
+        .mobile-menu-toggle {
+            display: none; /* Escondido no desktop */
+            background: transparent; border: 1px solid var(--border-color);
+            color: var(--text-secondary); font-size: 1.2rem;
+            width: 40px; height: 40px; border-radius: 8px; cursor: pointer;
+        }
+        .header-title { font-size: 1.5rem; font-weight: 600; }
+        
+        .user-controls { display: flex; align-items: center; gap: 0.5rem; }
+        .user-controls button {
+            background: var(--bg-primary); border: 1px solid var(--border-color);
+            border-radius: 50%; width: 36px; height: 36px; font-size: 1.2rem;
+            cursor: pointer; color: var(--text-secondary); transition: all 0.3s ease;
+            display: flex; align-items: center; justify-content: center;
+            position: relative; overflow: hidden;
+        }
+        .user-controls button:hover { 
+            border-color: var(--highlight-color); 
+            color: var(--highlight-color);
+            transform: scale(1.1);
+        }
+        .user-controls button:active {
+            transform: scale(0.95);
+        }
+        .theme-button {
+            transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+        .theme-button.active {
+            background: var(--accent-color);
+            color: var(--highlight-color);
+            border-color: var(--accent-color);
+            box-shadow: 0 0 20px rgba(74, 111, 165, 0.3);
+        }
+        .theme-button {
+            font-size: 1.2rem;
+        }
+        .theme-button:hover {
+            transform: scale(1.1) rotate(10deg);
+        }
+        .logout-btn { background: var(--text-secondary); color: var(--bg-primary); }
+        .logout-btn:hover { background: var(--highlight-color); }
+
+        /* Estilos do conteúdo principal */
+        main { padding: 2rem; }
+        .dashboard-grid, .kpi-grid { display: grid; gap: 1.5rem; }
+        .kpi-grid { grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); }
+        .widget { background: var(--surface-color); border: 1px solid var(--border-color); border-radius: 16px; padding: 1.5rem; box-shadow: 0 4px 12px var(--shadow-color); }
+        .welcome-text h2 { font-size: 2rem; }
+        
+        /* Estilos dos widgets KPI */
+        .kpi-widget {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+            padding: 1.5rem;
+            transition: transform 0.2s ease, box-shadow 0.2s ease;
+        }
+        .kpi-widget:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 25px var(--shadow-color);
+        }
+        .kpi-icon {
+            width: 50px;
+            height: 50px;
+            border-radius: 12px;
+            background: var(--accent-color);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.5rem;
+            color: white;
+        }
+        .kpi-content h3 {
+            font-size: 2rem;
+            font-weight: 700;
+            margin: 0;
+            color: var(--text-primary);
+        }
+        .kpi-content p {
+            margin: 0.25rem 0 0 0;
+            color: var(--text-secondary);
+            font-size: 0.9rem;
+        }
+        
+        /* Estilos do widget de atividades */
+        .widget-activities {
+            grid-column: 1 / -1;
+        }
+        .widget-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 1.5rem;
+            padding-bottom: 1rem;
+            border-bottom: 1px solid var(--border-color);
+        }
+        .widget-actions {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+        .add-activity-btn {
+            background: var(--accent-color);
+            border: none;
+            border-radius: 8px;
+            color: white;
+            padding: 0.5rem;
+            cursor: pointer;
+            font-size: 0.9rem;
+            transition: all 0.2s ease;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            width: 36px;
+            height: 36px;
+        }
+        .add-activity-btn:hover {
+            background: var(--accent-hover);
+            transform: scale(1.05);
+        }
+        .add-activity-btn:active {
+            transform: scale(0.95);
+        }
+        .widget-header h3 {
+            margin: 0;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            color: var(--text-primary);
+        }
+        .view-all-btn {
+            color: var(--accent-color);
+            text-decoration: none;
+            font-weight: 500;
+            padding: 0.5rem 1rem;
+            border-radius: 8px;
+            transition: background-color 0.2s ease;
+        }
+        .view-all-btn:hover {
+            background-color: var(--surface-color);
+        }
+        .activities-list {
+            display: flex;
+            flex-direction: column;
+            gap: 1rem;
+        }
+        .activity-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 1rem;
+            background: var(--bg-primary);
+            border: 1px solid var(--border-color);
+            border-radius: 12px;
+            transition: all 0.2s ease;
+        }
+        .activity-item:hover {
+            border-color: var(--accent-color);
+            transform: translateX(4px);
+        }
+        .activity-info h4 {
+            margin: 0 0 0.25rem 0;
+            color: var(--text-primary);
+            font-size: 1rem;
+        }
+        .activity-info p {
+            margin: 0;
+            color: var(--text-secondary);
+            font-size: 0.85rem;
+        }
+        .activity-meta {
+            display: flex;
+            flex-direction: column;
+            align-items: flex-end;
+            gap: 0.25rem;
+        }
+        .activity-date {
+            font-size: 0.8rem;
+            color: var(--text-secondary);
+        }
+        .activity-status {
+            padding: 0.25rem 0.5rem;
+            border-radius: 6px;
+            font-size: 0.75rem;
+            font-weight: 500;
+        }
+        .status-pending {
+            background: rgba(255, 193, 7, 0.2);
+            color: #ffc107;
+        }
+        .status-due-today {
+            background: rgba(220, 53, 69, 0.2);
+            color: #dc3545;
+        }
+        .status-due-soon {
+            background: rgba(255, 152, 0, 0.2);
+            color: #ff9800;
+        }
+        .complete-btn {
+            background: var(--accent-color);
+            border: none;
+            border-radius: 50%;
+            width: 32px;
+            height: 32px;
+            color: white;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 0.8rem;
+            transition: all 0.2s ease;
+            margin-left: 0.5rem;
+        }
+        .complete-btn:hover {
+            background: var(--accent-hover);
+            transform: scale(1.1);
+        }
+        .complete-btn:active {
+            transform: scale(0.95);
+        }
+
+        /* === FUNCIONALIDADE RESPONSIVA DA SIDEBAR === */
+        @media (max-width: 992px) {
+            .sidebar {
+                transform: translateX(-100%);
+            }
+            .sidebar.open {
+                transform: translateX(0);
+            }
+            .main-container {
+                margin-left: 0;
+            }
+            .mobile-menu-toggle {
+                display: block;
+            }
+            .sidebar-overlay {
+                position: fixed;
+                top: 0; left: 0; width: 100%; height: 100%;
+                background-color: rgba(0,0,0,0.5);
+                z-index: 1099;
+                opacity: 0;
+                visibility: hidden;
+                transition: opacity 0.3s, visibility 0.3s;
+            }
+            .sidebar-overlay.active {
+                opacity: 1;
+                visibility: visible;
+            }
+        }
+    </style>
+</head>
+<body>
+
+    <aside class="sidebar" id="sidebar">
+        <div class="sidebar-header">
+            <img src="../logo.png" alt="Saga Logo" class="logo">
+            <h1>Saga</h1>
+        </div>
+        <nav class="sidebar-menu">
+            <a href="#" class="menu-item active"><i class="fa-solid fa-house"></i> <span>Início</span></a>
+            <a href="alunoatvi.html" class="menu-item"><i class="fa-solid fa-list-check"></i> <span>Atividades</span></a>
+            <a href="alunoexercicios.html" class="menu-item"><i class="fa-solid fa-code"></i> <span>Exercícios</span></a>
+            <a href="alunodash.html" class="menu-item"><i class="fa-solid fa-star"></i> <span>Notas</span></a>
+            <a href="alunocrono.html" class="menu-item"><i class="fa-solid fa-calendar-days"></i> <span>Calendário</span></a>
+            <a href="alunocomu.html" class="menu-item"><i class="fa-solid fa-bullhorn"></i> <span>Comunicados</span></a>
+        </nav>
+    </aside>
+    <div class="sidebar-overlay" id="sidebar-overlay"></div>
+
+    <div class="main-container">
+        <header>
+            <div class="header-left">
+                <button class="mobile-menu-toggle" id="mobile-menu-toggle"><i class="fa-solid fa-bars"></i></button>
+                <h2 class="header-title">Dashboard</h2>
+            </div>
+            <div class="user-controls">
+                <span id="username-display" style="color: var(--text-secondary); margin-right: 0.5rem; font-weight: 500;"></span>
+                <button id="theme-toggle-dark" class="theme-button" title="Tema Escuro">🌙</button>
+                <button id="theme-toggle-light" class="theme-button" title="Tema Claro">☀️</button>
+                <button class="logout-btn" onclick="logout()" title="Sair"><i class="fa-solid fa-right-from-bracket"></i></button>
+            </div>
+        </header>
+        
+        <main>
+            <div class="dashboard-grid">
+                <section class="widget widget-welcome">
+                    <div class="welcome-text">
+                        <h2>Bem-vindo!</h2>
+                        <p>Aqui está o seu resumo acadêmico para hoje.</p>
+                    </div>
+                    <div class="welcome-date" id="current-date">--</div>
+                </section>
+
+                <div class="kpi-grid">
+                    <div class="widget kpi-widget">
+                        <div class="kpi-icon">
+                            <i class="fa-solid fa-list-check"></i>
+                        </div>
+                        <div class="kpi-content">
+                            <h3 id="total-atividades">0</h3>
+                            <p>Atividades Pendentes</p>
+                        </div>
+                    </div>
+
+                    <div class="widget kpi-widget">
+                        <div class="kpi-icon">
+                            <i class="fa-solid fa-clock"></i>
+                        </div>
+                        <div class="kpi-content">
+                            <h3 id="atividades-hoje">0</h3>
+                            <p>Para Hoje</p>
+                        </div>
+                    </div>
+
+                    <div class="widget kpi-widget">
+                        <div class="kpi-icon">
+                            <i class="fa-solid fa-calendar-week"></i>
+                        </div>
+                        <div class="kpi-content">
+                            <h3 id="atividades-semana">0</h3>
+                            <p>Esta Semana</p>
+                        </div>
+                    </div>
+
+                    <div class="widget kpi-widget">
+                        <div class="kpi-icon">
+                            <i class="fa-solid fa-check-circle"></i>
+                        </div>
+                        <div class="kpi-content">
+                            <h3 id="atividades-concluidas">0</h3>
+                            <p>Concluídas</p>
+                        </div>
+                    </div>
+                </div>
+
+                <section class="widget widget-activities">
+                    <div class="widget-header">
+                        <h3><i class="fa-solid fa-list-check"></i> Atividades Recentes</h3>
+                        <div class="widget-actions">
+                            <button onclick="adicionarNovaAtividade()" class="add-activity-btn" title="Adicionar Atividade">
+                                <i class="fa-solid fa-plus"></i>
+                            </button>
+                            <a href="alunoatvi.html" class="view-all-btn">Ver Todas</a>
+                        </div>
+                    </div>
+                    <div class="activities-list" id="recent-activities">
+                        <!-- Atividades recentes carregadas via JavaScript -->
+                    </div>
+                    </section>
+            </div>
+        </main>
+    </div>
+
+    <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-database-compat.js"></script>
+
+    <script>
+        // === FUNCIONALIDADE DA SIDEBAR ===
+        function initSidebar() {
+            const sidebar = document.getElementById('sidebar');
+            const toggleButton = document.getElementById('mobile-menu-toggle');
+            const overlay = document.getElementById('sidebar-overlay');
+
+            const openSidebar = () => {
+                sidebar.classList.add('open');
+                overlay.classList.add('active');
+            };
+
+            const closeSidebar = () => {
+                sidebar.classList.remove('open');
+                overlay.classList.remove('active');
+            };
+
+            toggleButton.addEventListener('click', (e) => {
+                e.stopPropagation();
+                if (sidebar.classList.contains('open')) {
+                    closeSidebar();
+                } else {
+                    openSidebar();
+                }
+            });
+
+            overlay.addEventListener('click', closeSidebar);
+            document.addEventListener('keydown', (e) => {
+                if (e.key === 'Escape' && sidebar.classList.contains('open')) {
+                    closeSidebar();
+                }
+            });
+        }
+        
+        // === FUNCIONALIDADE DO HEADER E DADOS ===
+        const firebaseConfig = {
+            apiKey: "AIzaSyDhHGoe7GDJhMOjYSTbgqC7DHE2Dc_RR0M",
+            authDomain: "saga-1d4e2.firebaseapp.com",
+            databaseURL: "https://saga-1d4e2-default-rtdb.firebaseio.com",
+            projectId: "saga-1d4e2",
+            storageBucket: "saga-1d4e2.firebasestorage.app",
+            messagingSenderId: "419315470764",
+            appId: "1:419315470764:web:4e3fd28ca21f935bc52a09",
+            measurementId: "G-SSBL21VWE3"
+        };
+
+        firebase.initializeApp(firebaseConfig);
+        const auth = firebase.auth();
+        const db = firebase.database();
+
+        function logout() {
+            auth.signOut().then(() => {
+                localStorage.removeItem('saga-theme');
+                window.location.href = '../login.html';
+            }).catch((error) => {
+                console.error('Erro ao fazer logout:', error);
+            });
+        }
+
+        // === SISTEMA DE TEMAS COM PERSISTÊNCIA ===
+        let currentUser = null;
+
+        const applyTheme = (theme) => {
+            console.log('Aplicando tema:', theme); // Debug
+            
+            // Aplicar tema ao documento
+            document.documentElement.setAttribute('data-theme', theme);
+            localStorage.setItem('saga-theme', theme);
+            
+            // Atualizar botões de tema
+            const darkBtn = document.getElementById('theme-toggle-dark');
+            const lightBtn = document.getElementById('theme-toggle-light');
+            
+            if (darkBtn && lightBtn) {
+                if (theme === 'dark') {
+                    darkBtn.classList.add('active');
+                    lightBtn.classList.remove('active');
+                } else {
+                    lightBtn.classList.add('active');
+                    darkBtn.classList.remove('active');
+                }
+            }
+
+            // Salvar no Firebase se usuário estiver logado
+            if (currentUser) {
+                saveThemeToFirebase(theme);
+            }
+        };
+
+        const saveThemeToFirebase = (theme) => {
+            if (currentUser) {
+                db.ref(`users/${currentUser.uid}/preferences`).update({
+                    theme: theme,
+                    lastUpdated: firebase.database.ServerValue.TIMESTAMP
+                }).catch((error) => {
+                    console.error('Erro ao salvar tema no Firebase:', error);
+                });
+            }
+        };
+
+        const loadThemeFromFirebase = () => {
+            if (!currentUser) {
+                const localTheme = localStorage.getItem('saga-theme') || 'dark';
+                applyTheme(localTheme);
+                return;
+            }
+
+            console.log('Carregando tema do Firebase para usuário:', currentUser.uid);
+            
+            db.ref(`users/${currentUser.uid}/preferences/theme`).once('value')
+                .then((snapshot) => {
+                    const savedTheme = snapshot.val();
+                    if (savedTheme) {
+                        console.log('Tema carregado do Firebase:', savedTheme);
+                        applyTheme(savedTheme);
+                    } else {
+                        const localTheme = localStorage.getItem('saga-theme') || 'dark';
+                        console.log('Nenhum tema salvo no Firebase, usando localStorage:', localTheme);
+                        applyTheme(localTheme);
+                        // Salvar tema atual no Firebase
+                        saveThemeToFirebase(localTheme);
+                    }
+                })
+                .catch((error) => {
+                    console.error('Erro ao carregar tema do Firebase:', error);
+                    const localTheme = localStorage.getItem('saga-theme') || 'dark';
+                    applyTheme(localTheme);
+                });
+        };
+
+        // === SISTEMA DE ATIVIDADES ===
+        const mockAtividades = [
+            {
+                titulo: "Exercícios de Matemática",
+                descricao: "Resolver os exercícios das páginas 45 a 50 do livro didático.",
+                prazo: "2024-12-28",
+                professor: "Prof. Silva",
+                turma: "3º Ano A",
+                concluida: false
+            },
+            {
+                titulo: "Redação sobre Literatura",
+                descricao: "Escrever uma redação de 30 linhas sobre o Romantismo brasileiro.",
+                prazo: "2024-12-30", 
+                professor: "Prof. Maria",
+                turma: "3º Ano A",
+                concluida: false
+            },
+            {
+                titulo: "Projeto de Ciências",
+                descricao: "Desenvolver um projeto sobre fontes de energia renovável.",
+                prazo: "2025-01-05",
+                professor: "Prof. João",
+                turma: "3º Ano A",
+                concluida: true
+            },
+            {
+                titulo: "História do Brasil",
+                descricao: "Pesquisar sobre o período colonial brasileiro.",
+                prazo: "2024-12-29",
+                professor: "Prof. Ana",
+                turma: "3º Ano A",
+                concluida: false
+            },
+            {
+                titulo: "Inglês - Present Perfect",
+                descricao: "Exercícios de gramática sobre Present Perfect.",
+                prazo: "2024-12-31",
+                professor: "Prof. Carlos",
+                turma: "3º Ano A",
+                concluida: false
+            }
+        ];
+
+        function carregarAtividades() {
+            if (!currentUser) {
+                console.log('Usuário não logado, usando dados mockados');
+                carregarAtividadesMockadas();
+                return;
+            }
+
+            console.log('Carregando atividades do Firebase (nó atividades dos professores)');
+            
+            // Carregar atividades do nó 'atividades' (onde professores publicam)
+            db.ref('atividades').once('value')
+                .then((snapshot) => {
+                    const atividadesFirebase = snapshot.val();
+                    let atividades = [];
+
+                    if (atividadesFirebase) {
+                        // Converter objeto Firebase para array
+                        atividades = Object.keys(atividadesFirebase).map(key => ({
+                            id: key,
+                            ...atividadesFirebase[key],
+                            // Adicionar campos para compatibilidade
+                            professor: `Prof. ${atividadesFirebase[key].professorId?.substring(0, 8) || 'Desconhecido'}`,
+                            concluida: false // Atividades do professor sempre começam como não concluídas
+                        }));
+                    } else {
+                        // Se não há atividades no Firebase, usar dados mockados
+                        console.log('Nenhuma atividade encontrada no Firebase, usando dados mockados');
+                        atividades = mockAtividades;
+                    }
+
+                    processarAtividades(atividades);
+                })
+                .catch((error) => {
+                    console.error('Erro ao carregar atividades do Firebase:', error);
+                    console.log('Usando dados mockados como fallback');
+                    carregarAtividadesMockadas();
+                });
+        }
+
+        function carregarAtividadesMockadas() {
+            processarAtividades(mockAtividades);
+        }
+
+        // Função removida - agora usamos atividades dos professores diretamente
+
+        function processarAtividades(atividades) {
+            const hoje = new Date();
+            const hojeStr = hoje.toISOString().split('T')[0];
+            
+            // Calcular datas
+            const proximaSemana = new Date(hoje);
+            proximaSemana.setDate(hoje.getDate() + 7);
+            const proximaSemanaStr = proximaSemana.toISOString().split('T')[0];
+
+            // Verificar atividades concluídas pelo usuário
+            if (currentUser) {
+                db.ref(`users/${currentUser.uid}/atividadesConcluidas`).once('value')
+                    .then((snapshot) => {
+                        const concluidas = snapshot.val() || {};
+                        const idsConcluidas = Object.keys(concluidas);
+                        
+                        // Marcar atividades como concluídas
+                        atividades.forEach(atividade => {
+                            if (idsConcluidas.includes(atividade.id)) {
+                                atividade.concluida = true;
+                            }
+                        });
+                        
+                        calcularEstatisticas(atividades, hojeStr, proximaSemanaStr);
+                    })
+                    .catch((error) => {
+                        console.error('Erro ao carregar atividades concluídas:', error);
+                        calcularEstatisticas(atividades, hojeStr, proximaSemanaStr);
+                    });
+            } else {
+                calcularEstatisticas(atividades, hojeStr, proximaSemanaStr);
+            }
+        }
+
+        function calcularEstatisticas(atividades, hojeStr, proximaSemanaStr) {
+            // Filtrar atividades
+            const atividadesPendentes = atividades.filter(a => !a.concluida);
+            const atividadesHoje = atividadesPendentes.filter(a => a.prazo === hojeStr);
+            const atividadesSemana = atividadesPendentes.filter(a => a.prazo <= proximaSemanaStr);
+            const atividadesConcluidas = atividades.filter(a => a.concluida);
+
+            // Atualizar KPIs
+            document.getElementById('total-atividades').textContent = atividadesPendentes.length;
+            document.getElementById('atividades-hoje').textContent = atividadesHoje.length;
+            document.getElementById('atividades-semana').textContent = atividadesSemana.length;
+            document.getElementById('atividades-concluidas').textContent = atividadesConcluidas.length;
+
+            // Exibir atividades recentes (últimas 3 pendentes)
+            const atividadesRecentes = atividadesPendentes
+                .sort((a, b) => new Date(a.prazo) - new Date(b.prazo))
+                .slice(0, 3);
+
+            const container = document.getElementById('recent-activities');
+            container.innerHTML = '';
+
+            if (atividadesRecentes.length === 0) {
+                container.innerHTML = '<p style="text-align: center; color: var(--text-secondary); padding: 2rem;">Nenhuma atividade pendente! 🎉</p>';
+                return;
+            }
+
+            atividadesRecentes.forEach(atividade => {
+                const item = document.createElement('div');
+                item.className = 'activity-item';
+                
+                const status = getActivityStatus(atividade.prazo);
+                
+                item.innerHTML = `
+                    <div class="activity-info">
+                        <h4>${atividade.titulo}</h4>
+                        <p>${atividade.professor} • ${atividade.turma}</p>
+                    </div>
+                    <div class="activity-meta">
+                        <div class="activity-date">${formatDate(atividade.prazo)}</div>
+                        <div class="activity-status ${status.class}">${status.text}</div>
+                        ${!atividade.concluida ? `<button class="complete-btn" onclick="marcarComoConcluida('${atividade.id || 'mock'}')" title="Marcar como concluída">
+                            <i class="fa-solid fa-check"></i>
+                        </button>` : ''}
+                    </div>
+                `;
+                
+                container.appendChild(item);
+            });
+        }
+
+        function getActivityStatus(prazo) {
+            const hoje = new Date();
+            const dataPrazo = new Date(prazo);
+            const diffTime = dataPrazo - hoje;
+            const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+
+            if (diffDays < 0) {
+                return { class: 'status-due-today', text: 'Atrasada' };
+            } else if (diffDays === 0) {
+                return { class: 'status-due-today', text: 'Hoje' };
+            } else if (diffDays <= 3) {
+                return { class: 'status-due-soon', text: 'Em breve' };
+            } else {
+                return { class: 'status-pending', text: 'Pendente' };
+            }
+        }
+
+        function formatDate(dateString) {
+            const date = new Date(dateString);
+            return date.toLocaleDateString('pt-BR', {
+                day: '2-digit',
+                month: '2-digit',
+                year: 'numeric'
+            });
+        }
+
+        function atualizarDataAtual() {
+            const agora = new Date();
+            const dataFormatada = agora.toLocaleDateString('pt-BR', {
+                weekday: 'long',
+                year: 'numeric',
+                month: 'long',
+                day: 'numeric'
+            });
+            document.getElementById('current-date').textContent = dataFormatada;
+        }
+
+        // Função para marcar atividade como concluída
+        function marcarComoConcluida(atividadeId) {
+            if (!currentUser) {
+                console.log('Usuário não logado, não é possível marcar como concluída');
+                return;
+            }
+
+            console.log('Marcando atividade como concluída:', atividadeId);
+
+            if (atividadeId === 'mock') {
+                // Para dados mockados, apenas recarregar
+                carregarAtividades();
+                return;
+            }
+
+            // Salvar conclusão no nó do usuário (não modificar a atividade original do professor)
+            db.ref(`users/${currentUser.uid}/atividadesConcluidas/${atividadeId}`).set({
+                concluida: true,
+                dataConclusao: firebase.database.ServerValue.TIMESTAMP,
+                atividadeId: atividadeId
+            })
+            .then(() => {
+                console.log('Atividade marcada como concluída no Firebase');
+                // Recarregar atividades para atualizar a interface
+                carregarAtividades();
+            })
+            .catch((error) => {
+                console.error('Erro ao marcar atividade como concluída:', error);
+            });
+        }
+
+        // Função para adicionar nova atividade (para demonstração)
+        function adicionarNovaAtividade() {
+            if (!currentUser) {
+                console.log('Usuário não logado, não é possível adicionar atividade');
+                return;
+            }
+
+            const novaAtividade = {
+                titulo: "Nova Atividade",
+                descricao: "Descrição da nova atividade",
+                prazo: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString().split('T')[0], // 7 dias a partir de hoje
+                professor: "Prof. Sistema",
+                turma: "3º Ano A",
+                concluida: false
+            };
+
+            db.ref(`users/${currentUser.uid}/atividades`).push(novaAtividade)
+                .then(() => {
+                    console.log('Nova atividade adicionada ao Firebase');
+                    carregarAtividades();
+                })
+                .catch((error) => {
+                    console.error('Erro ao adicionar nova atividade:', error);
+                });
+        }
+
+        // === PONTO DE ENTRADA DO SCRIPT ===
+        auth.onAuthStateChanged((user) => {
+            if (user) {
+                currentUser = user;
+                initSidebar(); // INICIA A FUNCIONALIDADE DA SIDEBAR
+                
+                // Carregar tema do Firebase ou usar padrão
+                loadThemeFromFirebase();
+                
+                // Exibir nome do usuário (apenas o nome, não o email)
+                const displayName = user.displayName || user.email?.split('@')[0] || 'Usuário';
+                document.getElementById('username-display').textContent = displayName;
+                
+                // Carregar dados do dashboard
+                carregarAtividades();
+                atualizarDataAtual();
+                
+                // ... resto do seu código de autenticação ...
+            } else {
+                currentUser = null;
+                window.location.href = '../login.html';
+            }
+        });
+
+        // Função para configurar os botões de tema
+        function setupThemeButtons() {
+            const darkBtn = document.getElementById('theme-toggle-dark');
+            const lightBtn = document.getElementById('theme-toggle-light');
+            
+            console.log('Botões encontrados:', { darkBtn, lightBtn });
+            
+            if (darkBtn) {
+                darkBtn.onclick = function(e) {
+                    e.preventDefault();
+                    console.log('Clicou no tema escuro');
+                    applyTheme('dark');
+                };
+            }
+            
+            if (lightBtn) {
+                lightBtn.onclick = function(e) {
+                    e.preventDefault();
+                    console.log('Clicou no tema claro');
+                    applyTheme('light');
+                };
+            }
+        }
+
+        window.addEventListener('DOMContentLoaded', () => {
+            console.log('DOM carregado, configurando botões de tema...');
+            setupThemeButtons();
+            
+            // Aplicar tema inicial
+            const savedTheme = localStorage.getItem('saga-theme') || 'dark';
+            console.log('Tema inicial:', savedTheme);
+            applyTheme(savedTheme);
+        });
+    </script>
+</body>
+</html>

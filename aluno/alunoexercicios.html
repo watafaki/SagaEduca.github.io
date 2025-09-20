@@ -1,0 +1,458 @@
+<!DOCTYPE html>
+<html lang="pt-BR" data-theme="dark">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Gerador de Exercícios com IA | S.A.G.A.</title>
+  <link rel="icon" type="image/png" href="../logo.png" />
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="../universal-style.css">
+  <script src="../vinheta-animation.js"></script>
+  <script src="../custom-progress-bar.js"></script>
+  <script src="../sidebar-menu.js"></script>
+  <script src="../simple-menu.js"></script>
+  <style>
+    /* Estilos Universais (mesmo do Hub) */
+    :root { --font-main: 'Inter', sans-serif; }
+    [data-theme='dark'] {
+      --bg-primary: #0a0a0a; --bg-secondary: #141414; --surface-color: #1a1a1a;
+      --border-color: #2e2e2e; --text-primary: #f0f0f0; --text-secondary: #a0a0a0;
+      --shadow-color: rgba(0, 0, 0, 0.5); --highlight-color: #ffffff;
+      --success-color: #28a745; --error-color: #dc3545; --suggestion-color: #0d6efd;
+    }
+    [data-theme='light'] {
+      --bg-primary: #f5f5f7; --bg-secondary: #ffffff; --surface-color: #ffffff;
+      --border-color: #e5e5e5; --text-primary: #1d1d1f; --text-secondary: #6e6e73;
+      --shadow-color: rgba(0, 0, 0, 0.1); --highlight-color: #000000;
+      --success-color: #198754; --error-color: #dc3545; --suggestion-color: #0d6efd;
+    }
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      min-height: 100vh; background-color: var(--bg-primary);
+      font-family: var(--font-main); color: var(--text-primary);
+      transition: background-color 0.3s, color 0.3s;
+    }
+    canvas#particles-js {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100vw;
+      height: 100vh;
+      z-index: -1;
+      pointer-events: none;
+    }
+
+    .container { max-width: 1200px; margin: 0 auto; padding: 2rem; padding-top: 6rem; }
+    header {
+      display: flex; justify-content: space-between; align-items: center;
+      padding: 1.5rem 2.5rem; border-bottom: 1px solid var(--border-color);
+      background: rgba(26, 26, 26, 0.8); backdrop-filter: blur(20px);
+      position: fixed; top: 0; left: 0; right: 0; z-index: 1000;
+      transition: all 0.3s ease;
+    }
+    [data-theme='light'] header {
+      background: rgba(255, 255, 255, 0.8);
+    }
+    .header-left { display: flex; align-items: center; gap: 1rem; }
+    .logo-wrapper {
+      display: flex; align-items: center; justify-content: center;
+      width: 48px; height: 48px; background: transparent; border-radius: 50%;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.10); overflow: hidden;
+    }
+    .logo {
+      display: block; width: 48px; height: 48px; object-fit: contain;
+      background: transparent; border-radius: 50%; box-shadow: none; cursor: pointer;
+    }
+    .header-left h1 { font-size: 1.25rem; font-weight: 600; }
+    .user-controls { display: flex; align-items: center; gap: 0.5rem; }
+    .user-controls button {
+      background: var(--surface-color); border: 1px solid var(--border-color);
+      border-radius: 50%; width: 36px; height: 36px; font-size: 1.2rem;
+      cursor: pointer; color: var(--text-secondary); transition: all 0.2s ease;
+      display: flex; align-items: center; justify-content: center;
+    }
+    .user-controls button:hover { border-color: var(--highlight-color); color: var(--highlight-color); }
+    .logout-btn { background: var(--text-secondary); color: var(--bg-primary); }
+    .logout-btn:hover { background: var(--highlight-color); }
+
+    main {
+      flex: 1;
+      padding: 2rem;
+      display: flex;
+      flex-direction: column;
+      gap: 2rem;
+    }
+
+    .page-title {
+      text-align: center;
+      margin-bottom: 2rem;
+    }
+
+    .page-title h1 {
+      font-size: 2.5rem;
+      margin-bottom: 0.5rem;
+    }
+
+    .page-title p {
+      font-size: 1.2rem;
+      opacity: 0.8;
+    }
+
+    .back-btn {
+      display: inline-block;
+      margin-bottom: 1rem;
+      padding: 0.5rem 1rem;
+      background: var(--surface-color);
+      color: var(--text-primary);
+      border-radius: 8px;
+      text-decoration: none;
+      cursor: pointer;
+    }
+
+    .back-btn:hover {
+      background: var(--border-color);
+    }
+    
+    /* Estilos Específicos do Gerador */
+    .generator-container {
+        text-align: center; background: var(--surface-color);
+        border: 1px solid var(--border-color); border-radius: 16px;
+        padding: 3rem; box-shadow: 0 4px 12px var(--shadow-color);
+    }
+    .generator-container h1 { font-size: 2.5rem; font-weight: 700; margin-bottom: 0.5rem; }
+    .generator-container p {
+        color: var(--text-secondary); max-width: 600px;
+        margin: 0 auto 2.5rem auto; line-height: 1.6;
+    }
+    .generator-form {
+        display: flex; gap: 1rem; max-width: 600px; margin: 0 auto;
+    }
+    .generator-input {
+        flex-grow: 1; padding: 1rem; border: 1px solid var(--border-color);
+        border-radius: 8px; background: var(--bg-primary);
+        color: var(--text-primary); font-size: 1rem; font-family: var(--font-main);
+    }
+    .generator-button {
+        padding: 1rem 2rem; border: none; border-radius: 8px;
+        background: var(--highlight-color); color: var(--bg-secondary);
+        font-size: 1rem; font-weight: 600; cursor: pointer; transition: all 0.2s ease;
+    }
+    .generator-button:disabled { opacity: 0.5; cursor: not-allowed; }
+    
+    /* Estilos do Modal de Exercícios */
+    .modal-backdrop {
+        position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+        background: rgba(0, 0, 0, 0.7); backdrop-filter: blur(5px);
+        z-index: 100; display: none; align-items: center; justify-content: center;
+    }
+    .modal-content {
+        background: var(--bg-secondary); border-radius: 16px; width: 90%;
+        max-width: 700px; max-height: 90vh; overflow-y: auto; padding: 2rem;
+        position: relative; animation: slideIn 0.3s ease-out;
+    }
+    @keyframes slideIn { from { transform: translateY(20px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
+    .modal-header {
+        display: flex; justify-content: space-between; align-items: center;
+        margin-bottom: 1.5rem; border-bottom: 1px solid var(--border-color); padding-bottom: 1rem;
+    }
+    .modal-title { font-size: 1.5rem; }
+    .modal-close { background: none; border: none; font-size: 2rem; cursor: pointer; color: var(--text-secondary); }
+    .modal-body .loading-spinner {
+        width: 50px; height: 50px; border: 5px solid var(--border-color);
+        border-top-color: var(--highlight-color); border-radius: 50%;
+        animation: spin 1s linear infinite; margin: 2rem auto;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+    
+    .exercise-item { margin-bottom: 2rem; }
+    .exercise-question { font-weight: 600; margin-bottom: 1rem; font-size: 1.1rem; }
+    .exercise-options { display: flex; flex-direction: column; gap: 0.8rem; }
+    .option-item {
+        display: flex; align-items: center; gap: 0.8rem; padding: 0.8rem; border-radius: 8px;
+        border: 1px solid var(--border-color); cursor: pointer; transition: all 0.2s ease;
+    }
+    .option-item:hover { background: var(--surface-color); border-color: var(--highlight-color); }
+    .option-item.selected { background: var(--highlight-color); color: var(--bg-secondary); border-color: var(--highlight-color); }
+    .option-item.correct { background: var(--success-color); color: white; border-color: var(--success-color); }
+    .option-item.incorrect { background: var(--error-color); color: white; border-color: var(--error-color); }
+    
+    .feedback-container { display: none; margin-top: 1rem; }
+    .explanation {
+        padding: 1rem; background: var(--surface-color); border-radius: 8px;
+        border-left: 3px solid var(--text-secondary); margin-bottom: 1rem;
+    }
+    .youtube-suggestion h4 { margin-bottom: 0.5rem; font-size: 1rem; }
+    .youtube-suggestion a {
+        display: block; margin-bottom: 0.5rem; color: var(--suggestion-color);
+        text-decoration: none;
+    }
+    .youtube-suggestion a:hover { text-decoration: underline; }
+
+    .modal-footer { margin-top: 2rem; padding-top: 1.5rem; border-top: 1px solid var(--border-color); text-align: right; }
+  </style>
+</head>
+<body data-theme="dark">
+
+  <header>
+    <div class="header-left">
+      <span class="logo-wrapper">
+        <img src="logo.png" alt="Saga Logo" class="logo" onclick="window.location.href='alunoinicio.html'">
+      </span>
+      <h1>Saga Hub</h1>
+    </div>
+    <div class="user-controls">
+      <span id="username-display" style="color: var(--text-secondary); margin-right: 0.5rem; font-weight: 500;"></span>
+      <button id="theme-toggle-dark" title="Tema Escuro">🌙</button>
+      <button id="theme-toggle-light" title="Tema Claro">☀️</button>
+      <button class="logout-btn" onclick="logout()">Sair</button>
+    </div>
+  </header>
+
+  <main>
+    <a class="back-btn" onclick="window.location.href='alunoinicio.html'">← Voltar ao Início</a>
+    
+    <section class="page-title">
+      <h1>Gerador de Exercícios</h1>
+      <p>Crie quizzes personalizados com inteligência artificial</p>
+    </section>
+
+    <div class="generator-container">
+      <p>Precisa praticar para uma prova? Digite qualquer assunto, matéria ou tópico abaixo e nossa inteligência artificial criará um quiz personalizado para você.</p>
+      
+      <form class="generator-form" id="generator-form">
+        <input type="text" class="generator-input" id="topic-input" placeholder="Ex: Revolução Francesa, Teorema de Pitágoras..." required>
+        <button type="submit" class="generator-button" id="generate-btn">Gerar Quiz</button>
+      </form>
+    </div>
+  </main>
+
+  <div class="modal-backdrop" id="quiz-modal">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h2 class="modal-title" id="modal-title">Seu Quiz Personalizado</h2>
+        <button class="modal-close" id="modal-close-btn">&times;</button>
+      </div>
+      <div class="modal-body" id="modal-body"></div>
+      <div class="modal-footer" id="modal-footer"></div>
+    </div>
+  </div>
+
+  <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/9.6.1/firebase-app.js";
+    import { getAuth, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/9.6.1/firebase-auth.js";
+
+    // Configuração do Firebase e Lógica de Tema (sem alterações)
+    const firebaseConfig = {
+      apiKey: "AIzaSyDhHGoe7GDJhMOjYSTbgqC7DHE2Dc_RR0M",
+      authDomain: "saga-1d4e2.firebaseapp.com",
+      projectId: "saga-1d4e2",
+    };
+    const app = initializeApp(firebaseConfig);
+    const auth = getAuth(app);
+    onAuthStateChanged(auth, (user) => {
+      if (user) {
+        document.getElementById('username-display').textContent = user.email.split('@')[0];
+      } else {
+        window.location.href = '../login.html';
+      }
+    });
+    window.logout = () => {
+        signOut(auth).then(() => {
+            if (window.navigateWithVinheta) {
+                window.navigateWithVinheta('../login.html');
+            } else {
+                window.location.href = '../login.html';
+            }
+        }).catch(error => console.error('Logout error', error));
+    };
+    const themeToggleDark = document.getElementById('theme-toggle-dark');
+    const themeToggleLight = document.getElementById('theme-toggle-light');
+    const applyTheme = (theme) => {
+      document.documentElement.setAttribute('data-theme', theme);
+      localStorage.setItem('saga-theme', theme);
+      
+      // Atualiza a logo baseada no tema
+      const logo = document.querySelector('.logo');
+      if (logo) {
+        if (theme === 'light' || theme === 'claro') {
+          logo.src = 'logoinvertido.png';
+        } else {
+          logo.src = 'logo.png';
+        }
+      }
+    };
+    themeToggleDark.addEventListener('click', () => applyTheme('dark'));
+    themeToggleLight.addEventListener('click', () => applyTheme('light'));
+    document.addEventListener('DOMContentLoaded', () => {
+        const savedTheme = localStorage.getItem('saga-theme') || 'dark';
+        applyTheme(savedTheme);
+    });
+
+    // =========================================================
+    // LÓGICA DO GERADOR DE EXERCÍCIOS (COM EXTRAÇÃO DE JSON ROBUSTA)
+    // =========================================================
+    const generatorForm = document.getElementById('generator-form');
+    const generateBtn = document.getElementById('generate-btn');
+    const topicInput = document.getElementById('topic-input');
+    const modal = document.getElementById('quiz-modal');
+    const modalBody = document.getElementById('modal-body');
+    const modalFooter = document.getElementById('modal-footer');
+    const modalCloseBtn = document.getElementById('modal-close-btn');
+    const modalTitle = document.getElementById('modal-title');
+
+    const GEMINI_API_KEY = "AIzaSyDVO02XNGIKWB2I_lU28CcJbbdawOVCNA8"; 
+    const API_ENDPOINT = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent`;
+    
+    let generatedQuestions = [];
+
+    const openModal = () => {
+        modal.style.display = 'flex';
+        document.body.classList.add('modal-open');
+    };
+    const closeModal = () => {
+        modal.style.display = 'none';
+        document.body.classList.remove('modal-open');
+    };
+    modalCloseBtn.addEventListener('click', closeModal);
+
+    generatorForm.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const topic = topicInput.value.trim();
+        if (!topic) return;
+
+        generateBtn.disabled = true;
+        generateBtn.textContent = 'Gerando...';
+        openModal();
+        modalTitle.textContent = `Quiz sobre: ${topic}`;
+        modalBody.innerHTML = '<div class="loading-spinner"></div>';
+        modalFooter.innerHTML = '';
+        
+        await generateExercises(topic);
+        
+        generateBtn.disabled = false;
+        generateBtn.textContent = 'Gerar Quiz';
+    });
+
+    async function generateExercises(topic) {
+        const prompt = `Aja como um tutor acadêmico. Gere 3 questões de múltipla escolha em português sobre o tema "${topic}". Cada questão deve ter 5 alternativas (A, B, C, D, E) e apenas uma correta. Para cada questão, forneça: 1. A pergunta. 2. As 5 opções. 3. O índice da resposta correta (de 0 a 4). 4. Uma explicação clara e concisa da resposta. 5. Um array com 2 sugestões de termos de busca em português para encontrar vídeos educacionais no YouTube sobre o tópico específico da pergunta. Retorne a resposta EXCLUSIVAMENTE em formato de array JSON, sem nenhum texto ou formatação adicional. Siga este modelo de estrutura JSON: [{"pergunta": "Qual é a pergunta?","opcoes": ["Opção A", "Opção B", "Opção C", "Opção D", "Opção E"],"resposta": 2,"explicacao": "A explicação da resposta correta.","youtubeSearchTerms": ["primeiro termo de busca", "segundo termo de busca"]}]`;
+
+        try {
+            const response = await fetch(API_ENDPOINT, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'x-goog-api-key': GEMINI_API_KEY
+                },
+                body: JSON.stringify({ contents: [{ parts: [{ text: prompt }] }] })
+            });
+            
+            const data = await response.json();
+
+            if (!response.ok) {
+                const errorMessage = data?.error?.message || `Erro desconhecido. Status: ${response.status}`;
+                throw new Error(errorMessage);
+            }
+
+            if (!data.candidates || data.candidates.length === 0) {
+                 throw new Error("A resposta da IA foi bloqueada. Tente um tópico diferente.");
+            }
+
+            const responseText = data.candidates[0].content.parts[0].text;
+            
+            // ======================================================================
+            // MUDANÇA CRUCIAL: Extração robusta de JSON para evitar erros de formato
+            // ======================================================================
+            const startIndex = responseText.indexOf('[');
+            const endIndex = responseText.lastIndexOf(']');
+            
+            if (startIndex === -1 || endIndex === -1) {
+                throw new Error("A IA não retornou um formato de quiz válido (JSON não encontrado).");
+            }
+            
+            const jsonString = responseText.substring(startIndex, endIndex + 1);
+            // ======================================================================
+
+            generatedQuestions = JSON.parse(jsonString);
+            displayGeneratedQuestions(generatedQuestions);
+
+        } catch (error) {
+            console.error("DETALHES DO ERRO:", error);
+            modalBody.innerHTML = `
+                <p style="text-align: center; color: var(--error-color); font-weight: bold; margin-bottom: 1rem;">
+                    Falha ao Processar a Resposta da IA
+                </p>
+                <p style="text-align: center; color: var(--text-secondary);">
+                    <strong>Erro:</strong><br>
+                    "${error.message}"
+                </p>
+                <p style="text-align: center; color: var(--text-secondary); margin-top: 1.5rem;">
+                    Isso pode acontecer se a IA responder de forma inesperada. Tente ser mais específico no seu tópico ou tente novamente.
+                </p>
+            `;
+        }
+    }
+    
+    // As funções displayGeneratedQuestions e checkAnswers continuam as mesmas...
+    function displayGeneratedQuestions(questions) {
+        modalBody.innerHTML = '';
+        questions.forEach((q, index) => {
+            const optionsHtml = q.opcoes.map((opt, optIndex) => `
+                <div class="option-item" data-question="${index}" data-option="${optIndex}">
+                    <strong>${String.fromCharCode(65 + optIndex)}.&nbsp;</strong> ${opt}
+                </div>
+            `).join('');
+            const youtubeLinksHtml = q.youtubeSearchTerms.map(term => `
+                <a href="https://www.youtube.com/results?search_query=${encodeURIComponent(term)}" target="_blank">🎬 ${term}</a>
+            `).join('');
+            modalBody.innerHTML += `
+                <div class="exercise-item" id="q-${index}">
+                    <div class="exercise-question">${index + 1}. ${q.pergunta}</div>
+                    <div class="exercise-options">${optionsHtml}</div>
+                    <div class="feedback-container" id="feedback-${index}">
+                        <div class="explanation">${q.explicacao}</div>
+                        <div class="youtube-suggestion">
+                            <h4>Sugestões de estudo no YouTube:</h4>
+                            ${youtubeLinksHtml}
+                        </div>
+                    </div>
+                </div>`;
+        });
+        modalFooter.innerHTML = '<button class="generator-button" id="check-answers-btn">Verificar Respostas</button>';
+        document.querySelectorAll('.option-item').forEach(item => {
+            item.addEventListener('click', () => {
+                const qIndex = item.dataset.question;
+                document.querySelectorAll(`.option-item[data-question="${qIndex}"]`).forEach(opt => opt.classList.remove('selected'));
+                item.classList.add('selected');
+            });
+        });
+        document.getElementById('check-answers-btn').addEventListener('click', checkAnswers);
+    }
+    
+    function checkAnswers() {
+        generatedQuestions.forEach((q, index) => {
+            const options = document.querySelectorAll(`.option-item[data-question="${index}"]`);
+            const selectedOption = document.querySelector(`.option-item[data-question="${index}"].selected`);
+            const feedbackContainer = document.getElementById(`feedback-${index}`);
+            options.forEach(opt => opt.style.pointerEvents = 'none');
+            if (selectedOption) {
+                const selectedAnswer = parseInt(selectedOption.dataset.option);
+                if (selectedAnswer === q.resposta) {
+                    selectedOption.classList.add('correct');
+                } else {
+                    selectedOption.classList.add('incorrect');
+                    options[q.resposta].classList.add('correct');
+                    feedbackContainer.style.display = 'block';
+                }
+            } else {
+                options[q.resposta].classList.add('correct');
+                feedbackContainer.style.display = 'block';
+            }
+        });
+        this.disabled = true;
+        this.textContent = 'Verificado!';
+    }
+  </script>
+</body>
+</html>

@@ -1,0 +1,866 @@
+<!DOCTYPE html>
+<html lang="pt-BR" data-theme="dark">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+    <title>Dashboard | Professor | Saga</title>
+    <link rel="icon" type="image/png" href="../logo.png" />
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="../universal-style.css">
+    <script src="../vinheta-animation.js"></script>
+    <script src="../custom-progress-bar.js"></script>
+    <script type="module">
+        // Firebase Configuration
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/9.6.1/firebase-app.js";
+        import { getAuth, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/9.6.1/firebase-auth.js";
+        import { getDatabase, ref, onValue } from "https://www.gstatic.com/firebasejs/9.6.1/firebase-database.js";
+
+        const firebaseConfig = {
+            apiKey: "AIzaSyDhHGoe7GDJhMOjYSTbgqC7DHE2Dc_RR0M",
+            authDomain: "saga-1d4e2.firebaseapp.com",
+            databaseURL: "https://saga-1d4e2-default-rtdb.firebaseio.com",
+            projectId: "saga-1d4e2",
+            storageBucket: "saga-1d4e2.firebasestorage.app",
+            messagingSenderId: "419315470764",
+            appId: "1:419315470764:web:4e3fd28ca21f935bc52a09",
+            measurementId: "G-SSBL21VWE3"
+        };
+
+        const app = initializeApp(firebaseConfig);
+        const auth = getAuth(app);
+        const database = getDatabase(app);
+
+        let currentUser = null;
+        let userData = null;
+
+        // Sidebar functionality
+        function initSidebar() {
+            const sidebarToggle = document.getElementById('sidebar-toggle');
+            const mobileToggle = document.getElementById('mobile-menu-toggle');
+            const sidebar = document.querySelector('.sidebar');
+            const mainContent = document.querySelector('.main-content');
+
+            // Create overlay for mobile
+            const overlay = document.createElement('div');
+            overlay.className = 'sidebar-overlay';
+            document.body.appendChild(overlay);
+
+            // Desktop toggle
+            sidebarToggle?.addEventListener('click', () => {
+                sidebar.classList.toggle('collapsed');
+                mainContent.classList.toggle('expanded');
+            });
+
+            // Mobile toggle
+            mobileToggle?.addEventListener('click', () => {
+                sidebar.classList.toggle('mobile-open');
+                overlay.classList.toggle('active');
+            });
+
+            // Close on overlay click
+            overlay.addEventListener('click', () => {
+                sidebar.classList.remove('mobile-open');
+                overlay.classList.remove('active');
+            });
+        }
+
+        // Load user data from Firebase
+        function loadUserData() {
+            if (!currentUser) return;
+
+            const userRef = ref(database, `users/${currentUser.uid}`);
+            onValue(userRef, (snapshot) => {
+                const data = snapshot.val();
+                if (data) {
+                    userData = data;
+                    updateUserInfo();
+                    loadDashboardData();
+                }
+            });
+        }
+
+        // Update user info in UI
+        function updateUserInfo() {
+            if (!userData) return;
+
+            // Update header
+            const headerName = document.getElementById('header-user-name');
+            const sidebarName = document.getElementById('sidebar-user-name');
+            const sidebarRole = document.getElementById('sidebar-user-role');
+
+            // Nome do professor (prioridade: userData.nome > email prefix > 'Professor')
+            const professorName = userData.nome || 
+                                 (currentUser.email ? currentUser.email.split('@')[0] : 'Professor');
+            
+            if (headerName) headerName.textContent = `Prof. ${professorName}`;
+            if (sidebarName) sidebarName.textContent = professorName;
+            if (sidebarRole) sidebarRole.textContent = userData.disciplina || 'Professor';
+
+            // Update welcome message
+            const welcomeMsg = document.querySelector('.welcome-text h2');
+            if (welcomeMsg) {
+                welcomeMsg.textContent = `Bem-vindo, ${professorName}!`;
+            }
+        }
+
+        // Load dashboard data from Firebase
+        function loadDashboardData() {
+            if (!currentUser) return;
+
+            console.log('Carregando dados reais do dashboard para professor:', currentUser.uid);
+
+            // Carregar atividades criadas pelo professor
+            const atividadesRef = ref(database, 'atividades');
+            onValue(atividadesRef, (snapshot) => {
+                const atividades = snapshot.val() || {};
+                const minhasAtividades = Object.values(atividades).filter(ativ =>
+                    ativ.professorId === currentUser.uid
+                );
+
+                // Atualizar contador de atividades criadas
+                const createdElement = document.getElementById('created-activities-value');
+                if (createdElement) {
+                    createdElement.textContent = minhasAtividades.length;
+                }
+
+                console.log(`Atividades criadas: ${minhasAtividades.length}`);
+            });
+
+            // Carregar comunicados enviados pelo professor
+            const comunicadosRef = ref(database, 'comunicados');
+            onValue(comunicadosRef, (snapshot) => {
+                const comunicados = snapshot.val() || {};
+                const meusComunicados = Object.values(comunicados).filter(comm =>
+                    comm.autor === currentUser.email.split('@')[0] || 
+                    comm.professorId === currentUser.uid
+                );
+
+                // Atualizar contador de comunicados enviados
+                const commsElement = document.getElementById('sent-comms-value');
+                if (commsElement) {
+                    commsElement.textContent = meusComunicados.length;
+                }
+
+                console.log(`Comunicados enviados: ${meusComunicados.length}`);
+            });
+
+            // Carregar dados de alunos ativos (baseado em atividades concluídas)
+            carregarAlunosAtivos();
+
+            // Calcular taxa de entrega
+            calcularTaxaEntrega();
+            
+            // Ativar atualização em tempo real
+            atualizarTaxaEntregaTempoReal();
+        }
+
+        function carregarAlunosAtivos() {
+            // Buscar todos os usuários que marcaram atividades como concluídas
+            const usuariosRef = ref(database, 'users');
+            onValue(usuariosRef, (snapshot) => {
+                const usuarios = snapshot.val() || {};
+                let alunosAtivos = 0;
+
+                // Contar usuários que têm atividades concluídas
+                Object.values(usuarios).forEach(usuario => {
+                    if (usuario.atividadesConcluidas && Object.keys(usuario.atividadesConcluidas).length > 0) {
+                        alunosAtivos++;
+                    }
+                });
+
+                // Atualizar contador de alunos ativos
+                const activeElement = document.getElementById('active-students-value');
+                if (activeElement) {
+                    activeElement.textContent = alunosAtivos;
+                }
+
+                console.log(`Alunos ativos: ${alunosAtivos}`);
+            });
+        }
+
+        function calcularTaxaEntrega() {
+            // Buscar atividades do professor
+            const atividadesRef = ref(database, 'atividades');
+            onValue(atividadesRef, (snapshot) => {
+                const atividades = snapshot.val() || {};
+                const minhasAtividades = Object.values(atividades).filter(ativ =>
+                    ativ.professorId === currentUser.uid
+                );
+
+                if (minhasAtividades.length === 0) {
+                    // Se não há atividades, taxa é 0%
+                    const rateElement = document.getElementById('delivery-rate-value');
+                    if (rateElement) {
+                        rateElement.textContent = '0%';
+                    }
+                    return;
+                }
+
+                // Buscar atividades concluídas pelos alunos
+                const usuariosRef = ref(database, 'users');
+                onValue(usuariosRef, (snapshot) => {
+                    const usuarios = snapshot.val() || {};
+                    let totalConclusoes = 0;
+                    let totalAtividades = minhasAtividades.length;
+
+                    // Contar quantas vezes cada atividade foi concluída
+                    Object.values(usuarios).forEach(usuario => {
+                        if (usuario.atividadesConcluidas) {
+                            Object.keys(usuario.atividadesConcluidas).forEach(atividadeId => {
+                                // Verificar se esta atividade pertence ao professor
+                                const atividade = minhasAtividades.find(a => a.id === atividadeId);
+                                if (atividade) {
+                                    totalConclusoes++;
+                                }
+                            });
+                        }
+                    });
+
+                    // Calcular taxa de entrega baseada no total de conclusões vs total de atividades
+                    // Contar quantos alunos únicos concluíram pelo menos uma atividade
+                    const alunosQueConcluiram = new Set();
+                    Object.values(usuarios).forEach(usuario => {
+                        if (usuario.atividadesConcluidas) {
+                            Object.keys(usuario.atividadesConcluidas).forEach(atividadeId => {
+                                const atividade = minhasAtividades.find(a => a.id === atividadeId);
+                                if (atividade) {
+                                    alunosQueConcluiram.add(usuario.uid || usuario.email);
+                                }
+                            });
+                        }
+                    });
+
+                    // Calcular taxa baseada em alunos únicos que concluíram atividades
+                    const totalAlunos = Object.keys(usuarios).length;
+                    const taxaEntrega = totalAlunos > 0 ? 
+                        Math.round((alunosQueConcluiram.size / totalAlunos) * 100) : 0;
+                    
+                    const rateElement = document.getElementById('delivery-rate-value');
+                    if (rateElement) {
+                        rateElement.textContent = `${Math.min(taxaEntrega, 100)}%`;
+                    }
+
+                    console.log(`Taxa de entrega: ${taxaEntrega}% (${alunosQueConcluiram.size} alunos únicos de ${totalAlunos} total, ${totalConclusoes} conclusões de ${totalAtividades} atividades)`);
+                });
+            });
+        }
+
+        // Função para atualizar taxa de entrega em tempo real
+        function atualizarTaxaEntregaTempoReal() {
+            // Escutar mudanças nas atividades concluídas dos usuários
+            const usuariosRef = ref(database, 'users');
+            onValue(usuariosRef, (snapshot) => {
+                // Recalcular taxa de entrega quando houver mudanças
+                calcularTaxaEntrega();
+            });
+        }
+
+        // Logout function
+        window.logout = function() {
+            if (confirm('Deseja realmente sair?')) {
+                signOut(auth).then(() => {
+                    window.location.href = '../login.html';
+                });
+            }
+        };
+
+        // Theme functionality
+        const applyTheme = (theme) => {
+            document.documentElement.setAttribute('data-theme', theme);
+            localStorage.setItem('saga-theme', theme);
+
+            // Atualiza a logo baseada no tema
+            const logo = document.querySelector('.logo');
+            if (logo) {
+                if (theme === 'light' || theme === 'claro') {
+                    logo.src = '../logoinvertido.png';
+                } else {
+                    logo.src = '../logo.png';
+                }
+            }
+        };
+
+        // Initialize when authenticated
+        onAuthStateChanged(auth, (user) => {
+            if (user) {
+                currentUser = user;
+                loadUserData();
+                initSidebar();
+
+                // Initialize theme buttons
+                document.getElementById('theme-toggle-dark')?.addEventListener('click', () => applyTheme('dark'));
+                document.getElementById('theme-toggle-light')?.addEventListener('click', () => applyTheme('light'));
+
+                // Apply saved theme
+                applyTheme(localStorage.getItem('saga-theme') || 'dark');
+            } else {
+                window.location.href = '../login.html';
+            }
+        });
+    </script>
+    <style>
+        :root { --font-main: 'Inter', sans-serif; }
+        [data-theme='dark'] { --bg-primary: #0a0a0a; --bg-secondary: #141414; --surface-color: #1a1a1a; --border-color: #2e2e2e; --text-primary: #f0f0f0; --text-secondary: #a0a0a0; --shadow-color: rgba(0, 0, 0, 0.5); --highlight-color: #ffffff; }
+        [data-theme='light'] { --bg-primary: #f5f5f7; --bg-secondary: #ffffff; --surface-color: #ffffff; --border-color: #e5e5e5; --text-primary: #1d1d1f; --text-secondary: #6e6e73; --shadow-color: rgba(0, 0, 0, 0.1); --highlight-color: #000000; }
+        *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+        body {
+            min-height: 100vh;
+            background-color: var(--bg-primary);
+            font-family: var(--font-main);
+            color: var(--text-primary);
+            transition: background-color 0.5s ease;
+            margin: 0;
+            padding: 0;
+            display: flex;
+        }
+
+        /* Sidebar Styles */
+        .sidebar {
+            width: 280px;
+            height: 100vh;
+            background: var(--surface-color);
+            border-right: 1px solid var(--border-color);
+            display: flex;
+            flex-direction: column;
+            position: fixed;
+            left: 0;
+            top: 0;
+            z-index: 1000;
+            box-shadow: 2px 0 10px rgba(0, 0, 0, 0.1);
+        }
+
+        .sidebar-header {
+            padding: 2rem;
+            border-bottom: 1px solid var(--border-color);
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+            min-height: 80px;
+        }
+
+        .sidebar-logo {
+            width: 40px;
+            height: 40px;
+            object-fit: contain;
+            border-radius: 8px;
+        }
+
+        .sidebar-header h2 {
+            font-size: 1.5rem;
+            font-weight: 700;
+            color: var(--text-primary);
+            margin: 0;
+        }
+
+        .sidebar-menu {
+            flex: 1;
+            padding: 1rem 0;
+        }
+
+        .menu-item {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+            padding: 1rem 2rem;
+            color: var(--text-secondary);
+            text-decoration: none;
+            transition: all 0.3s ease;
+            border-left: 3px solid transparent;
+            cursor: pointer;
+        }
+
+        .menu-item:hover {
+            background: var(--bg-secondary);
+            color: var(--text-primary);
+            border-left-color: var(--highlight-color);
+        }
+
+        .menu-item.active {
+            background: var(--bg-secondary);
+            color: var(--text-primary);
+            border-left-color: #4CAF50;
+            font-weight: 600;
+        }
+
+        .menu-item svg {
+            flex-shrink: 0;
+        }
+
+        .sidebar-footer {
+            padding: 1.5rem;
+            border-top: 1px solid var(--border-color);
+        }
+
+        .user-info {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+            padding: 1rem;
+            background: var(--bg-secondary);
+            border-radius: 12px;
+            margin-bottom: 1rem;
+        }
+
+        .user-avatar {
+            width: 40px;
+            height: 40px;
+            background: linear-gradient(135deg, #4CAF50, #45a049);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.2rem;
+            color: white;
+        }
+
+        .user-details {
+            flex: 1;
+            min-width: 0;
+        }
+
+        .user-details .user-name {
+            display: block;
+            font-weight: 600;
+            color: var(--text-primary);
+            font-size: 0.9rem;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        .user-details .user-role {
+            display: block;
+            color: var(--text-secondary);
+            font-size: 0.8rem;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        .logout-btn {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            width: 100%;
+            padding: 1rem;
+            background: transparent;
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            color: var(--text-secondary);
+            cursor: pointer;
+            transition: all 0.3s ease;
+            font-size: 0.9rem;
+        }
+
+        .logout-btn:hover {
+            background: #ff4757;
+            color: white;
+            border-color: #ff4757;
+        }
+
+        /* Main Content */
+        .main-content {
+            flex: 1;
+            margin-left: 280px;
+            min-height: 100vh;
+            background: var(--bg-primary);
+            padding-top: 80px; /* Espaço para o cabeçalho fixo */
+        }
+
+        header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 1.5rem 2rem;
+            border-bottom: 1px solid var(--border-color);
+            background: rgba(26, 26, 26, 0.8);
+            backdrop-filter: blur(20px);
+            position: fixed;
+            top: 0;
+            left: 280px;
+            right: 0;
+            z-index: 1000;
+            transition: all 0.3s ease;
+        }
+
+        [data-theme='light'] header {
+            background: rgba(255, 255, 255, 0.8);
+        }
+
+        .header-left {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+        }
+
+        .logo-wrapper {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            width: 48px;
+            height: 48px;
+            background: transparent;
+            border-radius: 50%;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.10);
+            overflow: hidden;
+        }
+
+        .logo {
+            display: block;
+            width: 48px;
+            height: 48px;
+            object-fit: contain;
+            background: transparent;
+            border-radius: 50%;
+            box-shadow: none;
+            cursor: pointer;
+        }
+
+        .header-left h1 {
+            font-size: 1.25rem;
+            font-weight: 600;
+        }
+
+        .user-controls {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .user-controls button {
+            background: var(--surface-color);
+            border: 1px solid var(--border-color);
+            border-radius: 50%;
+            width: 36px;
+            height: 36px;
+            font-size: 1.2rem;
+            cursor: pointer;
+            color: var(--text-secondary);
+            transition: all 0.2s ease;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .user-controls button:hover {
+            border-color: var(--highlight-color);
+            color: var(--highlight-color);
+        }
+
+
+        /* Sidebar Toggle */
+        .sidebar-toggle {
+            display: none;
+            background: transparent;
+            border: none;
+            color: var(--text-secondary);
+            cursor: pointer;
+            padding: 8px;
+            border-radius: 4px;
+            transition: all 0.3s ease;
+        }
+
+        .sidebar-toggle:hover {
+            background: var(--bg-secondary);
+            color: var(--text-primary);
+        }
+
+        /* Mobile Menu Toggle */
+        .mobile-menu-toggle {
+            display: none;
+            background: transparent;
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            width: 36px;
+            height: 36px;
+            cursor: pointer;
+            color: var(--text-secondary);
+            transition: all 0.3s ease;
+            align-items: center;
+            justify-content: center;
+            font-size: 1rem;
+        }
+
+        .mobile-menu-toggle:hover {
+            background: var(--bg-secondary);
+            border-color: var(--highlight-color);
+            color: var(--highlight-color);
+        }
+
+        /* Sidebar Collapsed State */
+        .sidebar.collapsed {
+            transform: translateX(-240px);
+        }
+
+        .main-content.expanded {
+            margin-left: 40px;
+        }
+
+        /* Responsive */
+        @media (max-width: 1024px) {
+            .sidebar-toggle {
+                display: block;
+            }
+
+            .mobile-menu-toggle {
+                display: flex;
+            }
+
+            .sidebar {
+                transform: translateX(-280px);
+                z-index: 1001;
+            }
+
+            .sidebar.mobile-open {
+                transform: translateX(0);
+            }
+
+            .main-content {
+                margin-left: 0;
+                padding-top: 80px; /* Manter espaço para o cabeçalho em mobile */
+            }
+
+            header {
+                left: 0;
+            }
+
+            .sidebar-overlay {
+                position: fixed;
+                top: 0;
+                left: 0;
+                width: 100vw;
+                height: 100vh;
+                background: rgba(0, 0, 0, 0.5);
+                z-index: 1000;
+                opacity: 0;
+                visibility: hidden;
+                transition: all 0.3s ease;
+            }
+
+            .sidebar-overlay.active {
+                opacity: 1;
+                visibility: visible;
+            }
+        }
+        
+        /* Dashboard Grid */
+        .dashboard-grid { 
+            display: grid; 
+            grid-template-columns: repeat(12, 1fr); 
+            grid-template-rows: auto; 
+            gap: 2rem; 
+            width: 100%;
+            max-width: 100%;
+        }
+        .widget { 
+            background: var(--surface-color); 
+            border: 1px solid var(--border-color); 
+            border-radius: 16px; 
+            padding: 1.5rem; 
+            box-shadow: 0 4px 12px var(--shadow-color); 
+        }
+        .widget-title { font-size: 0.9rem; font-weight: 500; color: var(--text-secondary); margin-bottom: 1rem; }
+        .widget-welcome { grid-column: span 12; display: flex; justify-content: space-between; align-items: center; }
+        .welcome-text h2 { font-size: 2rem; font-weight: 700; }
+        .welcome-text p { color: var(--text-secondary); margin-top: 0.25rem; }
+        .welcome-date { font-size: 1rem; font-weight: 500; color: var(--text-secondary); text-align: right; }
+        
+        /* KPI Cards */
+        .widget-kpi { 
+            grid-column: span 12; 
+            display: grid; 
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); 
+            gap: 2rem; 
+            padding: 0; 
+            border: none; 
+            background: none; 
+            box-shadow: none; 
+        }
+        .kpi-card { 
+            background: var(--surface-color); 
+            border: 1px solid var(--border-color); 
+            border-radius: 16px; 
+            padding: 1.5rem; 
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+        }
+        .kpi-card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 25px var(--shadow-color);
+        }
+        .kpi-value { font-size: 3rem; font-weight: 700; margin-bottom: 0.5rem; }
+        .kpi-subtitle { 
+            font-size: 0.9rem; 
+            color: var(--text-secondary); 
+            margin: 0; 
+            font-weight: 500; 
+        }
+        
+        /* Navigation Grid */
+        .widget-navigation { grid-column: span 12; }
+        .navigation-grid { 
+            display: grid; 
+            grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); 
+            gap: 1.5rem; 
+            width: 100%;
+        }
+        .nav-item { 
+            background: var(--bg-primary); 
+            border: 1px solid var(--border-color); 
+            border-radius: 12px; 
+            padding: 1.5rem 1rem; 
+            text-align: center; 
+            cursor: pointer; 
+            transition: transform 0.2s ease, background-color 0.2s ease; 
+        }
+        .nav-item:hover { 
+            transform: translateY(-5px); 
+            background: var(--surface-color); 
+            border-color: var(--highlight-color); 
+        }
+        .nav-icon { font-size: 2rem; margin-bottom: 0.75rem; }
+        .nav-text { font-weight: 500; }
+        
+        
+        /* ESTILOS DA ANIMAÇÃO DE ENTRADA */
+        .page-transition-enter {
+            opacity: 0;
+            animation: fadeInPage 0.8s ease-out forwards;
+            animation-delay: 0.2s;
+        }
+        @keyframes fadeInPage { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+    </style>
+</head>
+<body>
+    <!-- Sidebar -->
+    <nav class="sidebar">
+        <div class="sidebar-header">
+            <img src="../logo.png" alt="Saga Logo" class="sidebar-logo">
+            <h2>S.A.G.A</h2>
+            <button class="sidebar-toggle" id="sidebar-toggle">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <line x1="3" y1="6" x2="21" y2="6"/>
+                    <line x1="3" y1="12" x2="21" y2="12"/>
+                    <line x1="3" y1="18" x2="21" y2="18"/>
+                </svg>
+            </button>
+        </div>
+
+        <div class="sidebar-menu">
+            <a href="professordash.html" class="menu-item active">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/>
+                    <polyline points="9,22 9,12 15,12 15,22"/>
+                </svg>
+                <span>Dashboard</span>
+            </a>
+
+            <a href="professoratividades.html" class="menu-item">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+                    <polyline points="14,2 14,8 20,8"/>
+                    <line x1="16" y1="13" x2="8" y2="13"/>
+                    <line x1="16" y1="17" x2="8" y2="17"/>
+                    <polyline points="10,9 9,9 8,9"/>
+                </svg>
+                <span>Atividades</span>
+            </a>
+
+            <a href="professorcomunicados.html" class="menu-item">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>
+                </svg>
+                <span>Comunicados</span>
+            </a>
+
+            <a href="professoralunos.html" class="menu-item">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/>
+                    <circle cx="9" cy="7" r="4"/>
+                    <path d="M23 21v-2a4 4 0 0 0-3-3.87"/>
+                    <path d="M16 3.13a4 4 0 0 1 0 7.75"/>
+                </svg>
+                <span>Alunos</span>
+            </a>
+        </div>
+
+        <div class="sidebar-footer">
+            <div class="user-info" id="user-info-sidebar">
+                <div class="user-avatar">👤</div>
+                <div class="user-details">
+                    <span class="user-name" id="sidebar-user-name">Carregando...</span>
+                    <span class="user-role" id="sidebar-user-role">...</span>
+                </div>
+            </div>
+            <button class="logout-btn" onclick="logout()" title="Sair">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/>
+                    <polyline points="16,17 21,12 16,7"/>
+                    <line x1="21" y1="12" x2="9" y2="12"/>
+                </svg>
+                <span>Sair</span>
+            </button>
+        </div>
+    </nav>
+
+    <!-- Main Content -->
+    <div class="main-content">
+        <header>
+            <div class="header-left">
+                <button class="mobile-menu-toggle" id="mobile-menu-toggle">
+                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <line x1="3" y1="6" x2="21" y2="6"/>
+                        <line x1="3" y1="12" x2="21" y2="12"/>
+                        <line x1="3" y1="18" x2="21" y2="18"/>
+                    </svg>
+                </button>
+                <span class="logo-wrapper">
+                    <img src="../logo.png" alt="Saga Logo" class="logo">
+                </span>
+                <h1>Dashboard do Professor</h1>
+            </div>
+            <div class="user-controls">
+                <span id="header-user-name" style="color: var(--text-secondary); margin-right: 1rem; font-weight: 500;">Carregando...</span>
+                <button id="theme-toggle-dark" title="Tema Escuro">🌙</button>
+                <button id="theme-toggle-light" title="Tema Claro">☀️</button>
+            </div>
+        </header>
+        <main class="dashboard-grid">
+            <section class="widget widget-welcome">
+                <div class="welcome-text">
+                    <h2>Bem-vinda, Prof. Maria!</h2>
+                    <p>Este é o seu painel de controle como professora.</p>
+                </div>
+                <div class="welcome-date">Quinta-feira, 21 de Setembro de 2025</div>
+            </section>
+            
+            <section class="widget-kpi">
+                <div class="kpi-card">
+                    <h4 class="widget-title">Atividades Criadas</h4>
+                    <div class="kpi-value" id="created-activities-value">8</div>
+                    <p class="kpi-subtitle">Este mês</p>
+                </div>
+                <div class="kpi-card">
+                    <h4 class="widget-title">Comunicados Enviados</h4>
+                    <div class="kpi-value" id="sent-comms-value">15</div>
+                    <p class="kpi-subtitle">Total</p>
+                </div>
+                <div class="kpi-card">
+                    <h4 class="widget-title">Alunos Ativos</h4>
+                    <div class="kpi-value" id="active-students-value">42</div>
+                    <p class="kpi-subtitle">Última semana</p>
+                </div>
+                <div class="kpi-card">
+                    <h4 class="widget-title">Taxa de Entrega</h4>
+                    <div class="kpi-value" id="delivery-rate-value">87%</div>
+                    <p class="kpi-subtitle">Média geral</p>
+                </div>
+            </section>
+            
+            
+        </main>
+    </div>
+
+</body>
+</html>

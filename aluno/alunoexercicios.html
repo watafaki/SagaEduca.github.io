@@ -244,18 +244,24 @@
     import { getAuth, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/9.6.1/firebase-auth.js";
 
     // =========================================================
-    // AVISO DE SEGURANÇA: NUNCA exponha suas chaves de API no código do cliente (frontend).
-    // Qualquer pessoa pode ver e usar suas chaves.
-    // Use um servidor backend para fazer as chamadas de API de forma segura.
-    // Troque as chaves abaixo por chaves NOVAS e use este código apenas para TESTES LOCAIS.
+    // ✅ CORREÇÃO 1: Configuração completa do Firebase.
+    // ATENÇÃO: A chave abaixo foi exposta. Recomendo fortemente que você a revogue
+    // e crie uma nova para garantir a segurança do seu projeto.
     // =========================================================
     const firebaseConfig = {
-      apiKey: "SUA_NOVA_CHAVE_API_DO_FIREBASE_AQUI", // <-- TROCAR!
+      apiKey: "AIzaSyDhHGoe7GDJhMOjYSTbgqC7DHE2Dc_RR0M",
       authDomain: "saga-1d4e2.firebaseapp.com",
+      databaseURL: "https://saga-1d4e2-default-rtdb.firebaseio.com",
       projectId: "saga-1d4e2",
+      storageBucket: "saga-1d4e2.appspot.com",
+      messagingSenderId: "419315470764",
+      appId: "1:419315470764:web:4e3fd28ca21f935bc52a09",
+      measurementId: "G-SSBL21VWE3"
     };
+
     const app = initializeApp(firebaseConfig);
     const auth = getAuth(app);
+
     onAuthStateChanged(auth, (user) => {
       if (user) {
         document.getElementById('username-display').textContent = user.email.split('@')[0];
@@ -263,6 +269,7 @@
         window.location.href = '../login.html';
       }
     });
+
     window.logout = () => {
         signOut(auth).then(() => {
             if (window.navigateWithVinheta) {
@@ -272,6 +279,7 @@
             }
         }).catch(error => console.error('Logout error', error));
     };
+
     const themeToggleDark = document.getElementById('theme-toggle-dark');
     const themeToggleLight = document.getElementById('theme-toggle-light');
     const applyTheme = (theme) => {
@@ -306,13 +314,11 @@
     const modalCloseBtn = document.getElementById('modal-close-btn');
     const modalTitle = document.getElementById('modal-title');
 
-    // 🔑 AVISO: Coloque sua NOVA chave de API aqui. Lembre-se, isso é INSEGURO para um site público.
-    const GEMINI_API_KEY = "SUA_NOVA_CHAVE_API_DO_GEMINI_AQUI"; // <-- TROCAR!
+    // ✅ CORREÇÃO 2: Sua chave da API Gemini foi inserida.
+    // ATENÇÃO: Esta chave também foi exposta. É muito importante que você
+    // a revogue no Google AI Studio e crie uma nova para usar aqui.
+    const GEMINI_API_KEY = "AIzaSyBWzRN8zyEoNXQRSeY7rhKu868WeohSq0w";
 
-    // =======================================================
-    // ✅ CORREÇÃO APLICADA AQUI
-    // O modelo foi trocado para 'gemini-pro', que é compatível com a API 'v1beta'.
-    // =======================================================
     const API_ENDPOINT = `https://generativelanguage.googleapis.com/v1beta/models/gemini-pro:generateContent`;
     
     let generatedQuestions = [];
@@ -330,9 +336,13 @@
     generatorForm.addEventListener('submit', async (e) => {
         e.preventDefault();
         const topic = topicInput.value.trim();
-        if (!topic || !GEMINI_API_KEY || GEMINI_API_KEY === "SUA_NOVA_CHAVE_API_DO_GEMINI_AQUI") {
-            alert("Por favor, insira um tópico e configure sua chave de API do Gemini no código.");
+        if (!topic) {
+            alert("Por favor, insira um tópico.");
             return;
+        }
+        if (!GEMINI_API_KEY || GEMINI_API_KEY.includes("SUA_NOVA_CHAVE")) {
+             alert("Por favor, configure sua chave de API do Gemini no código.");
+             return;
         }
 
         generateBtn.disabled = true;
@@ -352,7 +362,6 @@
         const prompt = `Aja como um tutor acadêmico. Gere 3 questões de múltipla escolha em português sobre o tema "${topic}". Cada questão deve ter 5 alternativas (A, B, C, D, E) e apenas uma correta. Para cada questão, forneça: 1. A pergunta. 2. As 5 opções. 3. O índice da resposta correta (de 0 a 4). 4. Uma explicação clara e concisa da resposta. 5. Um array com 2 sugestões de termos de busca em português para encontrar vídeos educacionais no YouTube sobre o tópico específico da pergunta. Retorne a resposta EXCLUSIVAMENTE em formato de array JSON, sem nenhum texto ou formatação adicional. Siga este modelo de estrutura JSON: [{"pergunta": "Qual é a pergunta?","opcoes": ["Opção A", "Opção B", "Opção C", "Opção D", "Opção E"],"resposta": 2,"explicacao": "A explicação da resposta correta.","youtubeSearchTerms": ["primeiro termo de busca", "segundo termo de busca"]}]`;
 
         try {
-            // A chave da API é passada como um parâmetro na URL
             const response = await fetch(`${API_ENDPOINT}?key=${GEMINI_API_KEY}`, {
                 method: 'POST',
                 headers: {
@@ -364,12 +373,10 @@
             const data = await response.json();
 
             if (!response.ok) {
-                // Tenta extrair a mensagem de erro específica da API
                 const errorMessage = data?.error?.message || `Erro desconhecido. Status: ${response.status}`;
                 throw new Error(errorMessage);
             }
             
-            // Tratamento de erro para conteúdo bloqueado pela IA
             if (data.promptFeedback && data.promptFeedback.blockReason) {
                 throw new Error(`A sua solicitação foi bloqueada. Motivo: ${data.promptFeedback.blockReason}. Tente um tópico diferente.`);
             }
@@ -380,7 +387,6 @@
 
             const responseText = data.candidates[0].content.parts[0].text;
             
-            // Extração robusta do JSON da resposta
             const startIndex = responseText.indexOf('[');
             const endIndex = responseText.lastIndexOf(']');
             

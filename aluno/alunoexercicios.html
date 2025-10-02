@@ -310,10 +310,14 @@
     const modalCloseBtn = document.getElementById('modal-close-btn');
     const modalTitle = document.getElementById('modal-title');
 
-    const GEMINI_API_KEY = "AIzaSyBWzRN8zyEoNXQRSeY7rhKu868WeohSq0w";
+    // ✅ PASSO IMPORTANTE: Substitua a string abaixo pela sua chave de API do Google AI Studio.
+    // 1. Vá para https://aistudio.google.com/
+    // 2. Clique em "Get API key" e copie sua chave.
+    // 3. Cole a chave aqui.
+    const GEMINI_API_KEY = "SUA_CHAVE_API_AQUI";
 
-    // ✅ CORREÇÃO FINAL: Usando o modelo "gemini-1.5-flash-latest" via REST API.
-    // Esta é a forma correta para o seu projeto em HTML/JS puro.
+    // ✅ CORREÇÃO: Usando o modelo "gemini-1.5-flash-latest" via REST API.
+    // Este é o modelo correto para usar após a desativação dos modelos "-tuning".
     const API_ENDPOINT = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash-latest:generateContent`;
     
     let generatedQuestions = [];
@@ -333,6 +337,11 @@
         const topic = topicInput.value.trim();
         if (!topic) {
             alert("Por favor, insira um tópico.");
+            return;
+        }
+
+        if (GEMINI_API_KEY === "AIzaSyDJjGdfyj-gKKMOoiCuwD9Lir-Diyvxp8I") {
+            alert("Por favor, adicione sua chave de API do Gemini no código JavaScript.");
             return;
         }
 
@@ -394,7 +403,7 @@
                         <strong>Erro:</strong> ${error.message}
                     </p>
                     <p style="color: var(--text-secondary);">
-                        Isso pode ocorrer se o tópico for muito complexo, a API estiver sobrecarregada ou o conteúdo for bloqueado por segurança. Por favor, tente novamente com um tópico diferente.
+                        Isso pode ocorrer se o tópico for muito complexo, a API estiver sobrecarregada, sua chave de API for inválida ou o conteúdo for bloqueado por segurança. Por favor, tente novamente com um tópico diferente.
                     </p>
                 </div>
             `;

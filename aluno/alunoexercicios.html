@@ -312,21 +312,20 @@
     const modalCloseBtn = document.getElementById('modal-close-btn');
     const modalTitle = document.getElementById('modal-title');
 
-    // ✅ CORREÇÃO: Sua chave da API Gemini foi inserida.
     const GEMINI_API_KEY = "AIzaSyBWzRN8zyEoNXQRSeY7rhKu868WeohSq0w";
 
-    // O endpoint da API do Gemini. Usando o gemini-1.0-pro que é um modelo estável e robusto.
-    const API_ENDPOINT = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.0-pro:generateContent`;
+    // ✅ CORREÇÃO APLICADA AQUI: O nome do modelo foi alterado para "gemini-pro"
+    const API_ENDPOINT = `https://generativelanguage.googleapis.com/v1beta/models/gemini-pro:generateContent`;
     
     let generatedQuestions = [];
 
     const openModal = () => {
         modal.style.display = 'flex';
-        document.body.style.overflow = 'hidden'; // Impede o scroll do fundo
+        document.body.style.overflow = 'hidden';
     };
     const closeModal = () => {
         modal.style.display = 'none';
-        document.body.style.overflow = 'auto'; // Restaura o scroll do fundo
+        document.body.style.overflow = 'auto';
     };
     modalCloseBtn.addEventListener('click', closeModal);
 
@@ -352,11 +351,9 @@
     });
 
     async function generateExercises(topic) {
-        // Prompt detalhado para garantir a resposta no formato JSON desejado.
         const prompt = `Aja como um tutor acadêmico. Gere 3 questões de múltipla escolha em português sobre o tema "${topic}". Cada questão deve ter 5 alternativas (A, B, C, D, E) e apenas uma correta. Para cada questão, forneça: 1. A pergunta. 2. As 5 opções. 3. O índice da resposta correta (de 0 a 4). 4. Uma explicação clara e concisa da resposta. 5. Um array com 2 sugestões de termos de busca em português para encontrar vídeos educacionais no YouTube sobre o tópico específico da pergunta. Retorne a resposta EXCLUSIVAMENTE em formato de array JSON, sem nenhum texto ou formatação adicional (como \`\`\`json). Siga este modelo de estrutura JSON: [{"pergunta": "Qual é a pergunta?","opcoes": ["Opção A", "Opção B", "Opção C", "Opção D", "Opção E"],"resposta": 2,"explicacao": "A explicação da resposta correta.","youtubeSearchTerms": ["primeiro termo de busca", "segundo termo de busca"]}]`;
 
         try {
-            // A chave da API é passada como um parâmetro na URL, o que é o método padrão para a API REST do Gemini.
             const response = await fetch(`${API_ENDPOINT}?key=${GEMINI_API_KEY}`, {
                 method: 'POST',
                 headers: {
@@ -382,7 +379,6 @@
 
             let responseText = data.candidates[0].content.parts[0].text;
             
-            // Limpa a resposta para garantir que seja um JSON válido, removendo possíveis formatações de markdown.
             responseText = responseText.replace(/```json/g, '').replace(/```/g, '').trim();
 
             generatedQuestions = JSON.parse(responseText);
@@ -434,7 +430,6 @@
         
         document.querySelectorAll('.option-item').forEach(item => {
             item.addEventListener('click', () => {
-                // Permite que o usuário selecione uma opção para a questão
                 const qIndex = item.dataset.question;
                 document.querySelectorAll(`.option-item[data-question="${qIndex}"]`).forEach(opt => opt.classList.remove('selected'));
                 item.classList.add('selected');
@@ -463,19 +458,16 @@
             const selectedOption = document.querySelector(`.option-item[data-question="${index}"].selected`);
             const feedbackContainer = document.getElementById(`feedback-${index}`);
             
-            // Desabilita cliques nas opções após a verificação
             options.forEach(opt => opt.style.pointerEvents = 'none');
             
             const selectedAnswer = parseInt(selectedOption.dataset.option);
             
-            // Mostra o feedback para todas as questões
             feedbackContainer.style.display = 'block';
 
             if (selectedAnswer === q.resposta) {
                 selectedOption.classList.add('correct');
             } else {
                 selectedOption.classList.add('incorrect');
-                // Destaca também a resposta correta
                 options[q.resposta].classList.add('correct');
             }
         });

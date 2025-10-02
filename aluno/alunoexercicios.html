@@ -231,7 +231,7 @@
   <div class="modal-backdrop" id="quiz-modal">
     <div class="modal-content">
       <div class="modal-header">
-        <h2 class="modal-title" id="modal-title">Seu  Personalizado</h2>
+        <h2 class="modal-title" id="modal-title">Seu Quiz Personalizado</h2>
         <button class="modal-close" id="modal-close-btn">&times;</button>
       </div>
       <div class="modal-body" id="modal-body"></div>
@@ -244,9 +244,7 @@
     import { getAuth, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/9.6.1/firebase-auth.js";
 
     // =========================================================
-    // ✅ CORREÇÃO 1: Configuração completa do Firebase.
-    // ATENÇÃO: A chave abaixo foi exposta. Recomendo fortemente que você a revogue
-    // e crie uma nova para garantir a segurança do seu projeto.
+    // Configuração do Firebase
     // =========================================================
     const firebaseConfig = {
       apiKey: "AIzaSyDhHGoe7GDJhMOjYSTbgqC7DHE2Dc_RR0M",
@@ -314,22 +312,21 @@
     const modalCloseBtn = document.getElementById('modal-close-btn');
     const modalTitle = document.getElementById('modal-title');
 
-    // ✅ CORREÇÃO 2: Sua chave da API Gemini foi inserida.
-    // ATENÇÃO: Esta chave também foi exposta. É muito importante que você
-    // a revogue no Google AI Studio e crie uma nova para usar aqui.
+    // ✅ CORREÇÃO: Sua chave da API Gemini foi inserida.
     const GEMINI_API_KEY = "AIzaSyBWzRN8zyEoNXQRSeY7rhKu868WeohSq0w";
 
-    const API_ENDPOINT = `https://generativelanguage.googleapis.com/v1beta/models/gemini-pro:generateContent`;
+    // O endpoint da API do Gemini. Usando o gemini-1.0-pro que é um modelo estável e robusto.
+    const API_ENDPOINT = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.0-pro:generateContent`;
     
     let generatedQuestions = [];
 
     const openModal = () => {
         modal.style.display = 'flex';
-        document.body.classList.add('modal-open');
+        document.body.style.overflow = 'hidden'; // Impede o scroll do fundo
     };
     const closeModal = () => {
         modal.style.display = 'none';
-        document.body.classList.remove('modal-open');
+        document.body.style.overflow = 'auto'; // Restaura o scroll do fundo
     };
     modalCloseBtn.addEventListener('click', closeModal);
 
@@ -339,10 +336,6 @@
         if (!topic) {
             alert("Por favor, insira um tópico.");
             return;
-        }
-        if (!GEMINI_API_KEY || GEMINI_API_KEY.includes("SUA_NOVA_CHAVE")) {
-             alert("Por favor, configure sua chave de API do Gemini no código.");
-             return;
         }
 
         generateBtn.disabled = true;
@@ -359,9 +352,11 @@
     });
 
     async function generateExercises(topic) {
-        const prompt = `Aja como um tutor acadêmico. Gere 3 questões de múltipla escolha em português sobre o tema "${topic}". Cada questão deve ter 5 alternativas (A, B, C, D, E) e apenas uma correta. Para cada questão, forneça: 1. A pergunta. 2. As 5 opções. 3. O índice da resposta correta (de 0 a 4). 4. Uma explicação clara e concisa da resposta. 5. Um array com 2 sugestões de termos de busca em português para encontrar vídeos educacionais no YouTube sobre o tópico específico da pergunta. Retorne a resposta EXCLUSIVAMENTE em formato de array JSON, sem nenhum texto ou formatação adicional. Siga este modelo de estrutura JSON: [{"pergunta": "Qual é a pergunta?","opcoes": ["Opção A", "Opção B", "Opção C", "Opção D", "Opção E"],"resposta": 2,"explicacao": "A explicação da resposta correta.","youtubeSearchTerms": ["primeiro termo de busca", "segundo termo de busca"]}]`;
+        // Prompt detalhado para garantir a resposta no formato JSON desejado.
+        const prompt = `Aja como um tutor acadêmico. Gere 3 questões de múltipla escolha em português sobre o tema "${topic}". Cada questão deve ter 5 alternativas (A, B, C, D, E) e apenas uma correta. Para cada questão, forneça: 1. A pergunta. 2. As 5 opções. 3. O índice da resposta correta (de 0 a 4). 4. Uma explicação clara e concisa da resposta. 5. Um array com 2 sugestões de termos de busca em português para encontrar vídeos educacionais no YouTube sobre o tópico específico da pergunta. Retorne a resposta EXCLUSIVAMENTE em formato de array JSON, sem nenhum texto ou formatação adicional (como \`\`\`json). Siga este modelo de estrutura JSON: [{"pergunta": "Qual é a pergunta?","opcoes": ["Opção A", "Opção B", "Opção C", "Opção D", "Opção E"],"resposta": 2,"explicacao": "A explicação da resposta correta.","youtubeSearchTerms": ["primeiro termo de busca", "segundo termo de busca"]}]`;
 
         try {
+            // A chave da API é passada como um parâmetro na URL, o que é o método padrão para a API REST do Gemini.
             const response = await fetch(`${API_ENDPOINT}?key=${GEMINI_API_KEY}`, {
                 method: 'POST',
                 headers: {
@@ -373,45 +368,40 @@
             const data = await response.json();
 
             if (!response.ok) {
-                const errorMessage = data?.error?.message || `Erro desconhecido. Status: ${response.status}`;
+                const errorMessage = data?.error?.message || `Erro na API. Status: ${response.status}`;
                 throw new Error(errorMessage);
             }
             
             if (data.promptFeedback && data.promptFeedback.blockReason) {
-                throw new Error(`A sua solicitação foi bloqueada. Motivo: ${data.promptFeedback.blockReason}. Tente um tópico diferente.`);
+                throw new Error(`Sua solicitação foi bloqueada por segurança. Motivo: ${data.promptFeedback.blockReason}. Tente um tópico diferente.`);
             }
 
             if (!data.candidates || data.candidates.length === 0) {
-                throw new Error("A resposta da IA foi bloqueada ou veio vazia. Tente um tópico diferente.");
+                throw new Error("A IA não retornou uma resposta válida. Tente um tópico diferente.");
             }
 
-            const responseText = data.candidates[0].content.parts[0].text;
+            let responseText = data.candidates[0].content.parts[0].text;
             
-            const startIndex = responseText.indexOf('[');
-            const endIndex = responseText.lastIndexOf(']');
-            
-            if (startIndex === -1 || endIndex === -1) {
-                throw new Error("A IA não retornou um formato de quiz válido (JSON não encontrado). A resposta foi: " + responseText);
-            }
-            
-            const jsonString = responseText.substring(startIndex, endIndex + 1);
+            // Limpa a resposta para garantir que seja um JSON válido, removendo possíveis formatações de markdown.
+            responseText = responseText.replace(/```json/g, '').replace(/```/g, '').trim();
 
-            generatedQuestions = JSON.parse(jsonString);
+            generatedQuestions = JSON.parse(responseText);
             displayGeneratedQuestions(generatedQuestions);
 
         } catch (error) {
             console.error("DETALHES DO ERRO:", error);
             modalBody.innerHTML = `
-                <p style="text-align: center; color: var(--error-color); font-weight: bold; margin-bottom: 1rem;">
-                    Falha ao Gerar o Quiz
-                </p>
-                <p style="text-align: center; color: var(--text-secondary);">
-                    <strong>Erro:</strong><br>
-                    "${error.message}"
-                </p>
-                <p style="text-align: center; color: var(--text-secondary); margin-top: 1.5rem;">
-                    Isso pode acontecer se a sua chave de API for inválida, o conteúdo for bloqueado ou a IA responder de forma inesperada. Verifique o console para mais detalhes.
-                </p>
+                <div style="text-align: center;">
+                    <p style="color: var(--error-color); font-weight: bold; font-size: 1.2rem; margin-bottom: 1rem;">
+                        😕 Falha ao Gerar o Quiz
+                    </p>
+                    <p style="color: var(--text-secondary); margin-bottom: 1rem;">
+                        <strong>Erro:</strong> ${error.message}
+                    </p>
+                    <p style="color: var(--text-secondary);">
+                        Isso pode ocorrer se o tópico for muito complexo, a API estiver sobrecarregada ou o conteúdo for bloqueado por segurança. Por favor, tente novamente com um tópico diferente.
+                    </p>
+                </div>
             `;
         }
     }
@@ -432,7 +422,7 @@
                     <div class="exercise-question">${index + 1}. ${q.pergunta}</div>
                     <div class="exercise-options">${optionsHtml}</div>
                     <div class="feedback-container" id="feedback-${index}">
-                        <div class="explanation">${q.explicacao}</div>
+                        <div class="explanation"><strong>Explicação:</strong> ${q.explicacao}</div>
                         <div class="youtube-suggestion">
                             <h4>Sugestões de estudo no YouTube:</h4>
                             ${youtubeLinksHtml}
@@ -441,41 +431,59 @@
                 </div>`;
         });
         modalFooter.innerHTML = '<button class="generator-button" id="check-answers-btn">Verificar Respostas</button>';
+        
         document.querySelectorAll('.option-item').forEach(item => {
             item.addEventListener('click', () => {
+                // Permite que o usuário selecione uma opção para a questão
                 const qIndex = item.dataset.question;
                 document.querySelectorAll(`.option-item[data-question="${qIndex}"]`).forEach(opt => opt.classList.remove('selected'));
                 item.classList.add('selected');
             });
         });
+        
         document.getElementById('check-answers-btn').addEventListener('click', checkAnswers);
     }
     
     function checkAnswers() {
+        let allAnswered = true;
+        generatedQuestions.forEach((q, index) => {
+             const selectedOption = document.querySelector(`.option-item[data-question="${index}"].selected`);
+             if (!selectedOption) {
+                 allAnswered = false;
+             }
+        });
+
+        if (!allAnswered) {
+            alert("Por favor, responda a todas as perguntas antes de verificar.");
+            return;
+        }
+
         generatedQuestions.forEach((q, index) => {
             const options = document.querySelectorAll(`.option-item[data-question="${index}"]`);
             const selectedOption = document.querySelector(`.option-item[data-question="${index}"].selected`);
             const feedbackContainer = document.getElementById(`feedback-${index}`);
+            
+            // Desabilita cliques nas opções após a verificação
             options.forEach(opt => opt.style.pointerEvents = 'none');
-            if (selectedOption) {
-                const selectedAnswer = parseInt(selectedOption.dataset.option);
-                if (selectedAnswer === q.resposta) {
-                    selectedOption.classList.add('correct');
-                } else {
-                    selectedOption.classList.add('incorrect');
-                    options[q.resposta].classList.add('correct');
-                    feedbackContainer.style.display = 'block';
-                }
+            
+            const selectedAnswer = parseInt(selectedOption.dataset.option);
+            
+            // Mostra o feedback para todas as questões
+            feedbackContainer.style.display = 'block';
+
+            if (selectedAnswer === q.resposta) {
+                selectedOption.classList.add('correct');
             } else {
-                // Se nenhuma opção foi selecionada, apenas mostra a correta e o feedback
+                selectedOption.classList.add('incorrect');
+                // Destaca também a resposta correta
                 options[q.resposta].classList.add('correct');
-                feedbackContainer.style.display = 'block';
             }
         });
+
         const checkBtn = document.getElementById('check-answers-btn');
         if (checkBtn) {
             checkBtn.disabled = true;
-            checkBtn.textContent = 'Verificado!';
+            checkBtn.textContent = 'Resultados Exibidos!';
         }
     }
   </script>
